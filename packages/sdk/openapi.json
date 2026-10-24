@@ -3481,6 +3481,33 @@
         "required": ["type", "properties"],
         "additionalProperties": false
       },
+      "Event.monitor.received": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "monitor.received"
+          },
+          "properties": {
+            "type": "object",
+            "properties": {
+              "signalID": {
+                "type": "string"
+              },
+              "sessionID": {
+                "type": "string"
+              },
+              "coworkerID": {
+                "type": "string"
+              }
+            },
+            "required": ["signalID", "sessionID"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["type", "properties"],
+        "additionalProperties": false
+      },
       "Event.worktree.ready": {
         "type": "object",
         "properties": {
@@ -3686,6 +3713,9 @@
           },
           {
             "$ref": "#/components/schemas/Event.task.updated"
+          },
+          {
+            "$ref": "#/components/schemas/Event.monitor.received"
           },
           {
             "$ref": "#/components/schemas/Event.worktree.ready"
@@ -9648,6 +9678,45 @@
           "updatedAt"
         ],
         "additionalProperties": false
+      },
+      "MonitorSignal": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "sessionID": {
+            "type": "string"
+          },
+          "coworkerID": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/MonitorSeverity"
+          },
+          "source": {
+            "type": "string"
+          },
+          "data": {},
+          "dedupeKey": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "number"
+          }
+        },
+        "required": ["id", "sessionID", "title", "message", "severity", "source", "createdAt"],
+        "additionalProperties": false
+      },
+      "MonitorSeverity": {
+        "type": "string",
+        "enum": ["info", "warning", "error"]
       },
       "MemoryEntry": {
         "type": "object",
@@ -18546,6 +18615,242 @@
           {
             "lang": "js",
             "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.task.comment({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/monitor/{sessionID}": {
+      "get": {
+        "operationId": "monitor.list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 500
+            }
+          }
+        ],
+        "summary": "List monitoring signals",
+        "description": "List recently received monitoring signals for a session, newest first.",
+        "responses": {
+          "200": {
+            "description": "Monitoring signals",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MonitorSignal"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.monitor.list({\n  ...\n})"
+          }
+        ]
+      },
+      "post": {
+        "operationId": "monitor.send",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Send a monitoring signal",
+        "description": "Queue structured monitoring data for a session. Scripts use the session-scoped Bearer token supplied in MERAKCODE_MONITOR_TOKEN.",
+        "responses": {
+          "200": {
+            "description": "Stored monitoring signal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorSignal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  },
+                  "severity": {
+                    "$ref": "#/components/schemas/MonitorSeverity"
+                  },
+                  "source": {
+                    "type": "string"
+                  },
+                  "data": {},
+                  "dedupeKey": {
+                    "type": "string"
+                  }
+                },
+                "required": ["title", "message"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.monitor.send({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/monitor/{sessionID}/{signalID}": {
+      "get": {
+        "operationId": "monitor.get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "signalID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Get a monitoring signal",
+        "responses": {
+          "200": {
+            "description": "Monitoring signal",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonitorSignal"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.monitor.get({\n  ...\n})"
           }
         ]
       }

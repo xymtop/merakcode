@@ -31,6 +31,7 @@ already fills in from `createMerakCodeClient({ directory })`, so it is left out 
 - [topic](#topic)
 - [activity](#activity)
 - [task](#task)
+- [monitor](#monitor)
 - [memory](#memory)
 - [bash](#bash)
 - [tool.remote](#toolremote)
@@ -1493,6 +1494,56 @@ Comment on a task.
 | `content` | `string` | yes      |             |
 
 Returns: `Task`
+
+## monitor
+
+### client.monitor.list
+
+`GET /monitor/{sessionID}` · operationId `monitor.list`
+
+List monitoring signals.
+
+List recently received monitoring signals for a session, newest first.
+
+| Parameter   | Type     | Required | Description |
+| ----------- | -------- | -------- | ----------- |
+| `sessionID` | `string` | yes      |             |
+| `limit`     | `number` | no       |             |
+
+Returns: `MonitorSignal[]`
+
+### client.monitor.send
+
+`POST /monitor/{sessionID}` · operationId `monitor.send`
+
+Send a monitoring signal.
+
+Queue structured monitoring data for a session. Scripts use the session-scoped Bearer token supplied in MERAKCODE_MONITOR_TOKEN.
+
+| Parameter   | Type              | Required | Description |
+| ----------- | ----------------- | -------- | ----------- |
+| `sessionID` | `string`          | yes      |             |
+| `title`     | `string`          | yes      |             |
+| `message`   | `string`          | yes      |             |
+| `severity`  | `MonitorSeverity` | no       |             |
+| `source`    | `string`          | no       |             |
+| `data`      | `unknown`         | no       |             |
+| `dedupeKey` | `string`          | no       |             |
+
+Returns: `MonitorSignal`
+
+### client.monitor.get
+
+`GET /monitor/{sessionID}/{signalID}` · operationId `monitor.get`
+
+Get a monitoring signal.
+
+| Parameter   | Type     | Required | Description |
+| ----------- | -------- | -------- | ----------- |
+| `sessionID` | `string` | yes      |             |
+| `signalID`  | `string` | yes      |             |
+
+Returns: `MonitorSignal`
 
 ## memory
 

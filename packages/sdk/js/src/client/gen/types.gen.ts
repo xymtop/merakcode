@@ -1169,6 +1169,15 @@ export type EventTaskUpdated = {
   }
 }
 
+export type EventMonitorReceived = {
+  type: "monitor.received"
+  properties: {
+    signalID: string
+    sessionID: string
+    coworkerID?: string
+  }
+}
+
 export type EventWorktreeReady = {
   type: "worktree.ready"
   properties: {
@@ -1238,6 +1247,7 @@ export type Event =
   | EventActivityUpdated
   | EventTopicUpdated
   | EventTaskUpdated
+  | EventMonitorReceived
   | EventWorktreeReady
   | EventWorktreeFailed
   | EventReviewUpdated
@@ -3719,6 +3729,21 @@ export type Task = {
   createdAt: number
   updatedAt: number
 }
+
+export type MonitorSignal = {
+  id: string
+  sessionID: string
+  coworkerID?: string
+  title: string
+  message: string
+  severity: MonitorSeverity
+  source: string
+  data?: unknown
+  dedupeKey?: string
+  createdAt: number
+}
+
+export type MonitorSeverity = "info" | "warning" | "error"
 
 export type MemoryEntry = {
   /**
@@ -7783,6 +7808,114 @@ export type TaskCommentResponses = {
 }
 
 export type TaskCommentResponse = TaskCommentResponses[keyof TaskCommentResponses]
+
+export type MonitorListData = {
+  body?: never
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+    limit?: number
+  }
+  url: "/monitor/{sessionID}"
+}
+
+export type MonitorListErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type MonitorListError = MonitorListErrors[keyof MonitorListErrors]
+
+export type MonitorListResponses = {
+  /**
+   * Monitoring signals
+   */
+  200: Array<MonitorSignal>
+}
+
+export type MonitorListResponse = MonitorListResponses[keyof MonitorListResponses]
+
+export type MonitorSendData = {
+  body: {
+    title: string
+    message: string
+    severity?: MonitorSeverity
+    source?: string
+    data?: unknown
+    dedupeKey?: string
+  }
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/monitor/{sessionID}"
+}
+
+export type MonitorSendErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+}
+
+export type MonitorSendError = MonitorSendErrors[keyof MonitorSendErrors]
+
+export type MonitorSendResponses = {
+  /**
+   * Stored monitoring signal
+   */
+  200: MonitorSignal
+}
+
+export type MonitorSendResponse = MonitorSendResponses[keyof MonitorSendResponses]
+
+export type MonitorGetData = {
+  body?: never
+  path: {
+    sessionID: string
+    signalID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/monitor/{sessionID}/{signalID}"
+}
+
+export type MonitorGetErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type MonitorGetError = MonitorGetErrors[keyof MonitorGetErrors]
+
+export type MonitorGetResponses = {
+  /**
+   * Monitoring signal
+   */
+  200: MonitorSignal
+}
+
+export type MonitorGetResponse = MonitorGetResponses[keyof MonitorGetResponses]
 
 export type MemoryListData = {
   body?: never

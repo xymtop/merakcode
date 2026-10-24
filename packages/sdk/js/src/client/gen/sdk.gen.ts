@@ -170,6 +170,13 @@ import type {
   MemoryRemoveErrors,
   MemoryRemoveResponses,
   Message,
+  MonitorGetErrors,
+  MonitorGetResponses,
+  MonitorListErrors,
+  MonitorListResponses,
+  MonitorSendErrors,
+  MonitorSendResponses,
+  MonitorSeverity,
   OutputFormat,
   Part as Part2,
   PartDeleteErrors,
@@ -3848,6 +3855,117 @@ export class Task extends HeyApiClient {
   }
 }
 
+export class Monitor extends HeyApiClient {
+  /**
+   * List monitoring signals
+   *
+   * List recently received monitoring signals for a session, newest first.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+      limit?: number
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<MonitorListResponses, MonitorListErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "limit" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<MonitorListResponses, MonitorListErrors, ThrowOnError>({
+      url: "/monitor/{sessionID}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Send a monitoring signal
+   *
+   * Queue structured monitoring data for a session. Scripts use the session-scoped Bearer token supplied in MERAKCODE_MONITOR_TOKEN.
+   */
+  public send<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+      title: string
+      message: string
+      severity?: MonitorSeverity
+      source?: string
+      data?: unknown
+      dedupeKey?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<MonitorSendResponses, MonitorSendErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "title" },
+            { in: "body", key: "message" },
+            { in: "body", key: "severity" },
+            { in: "body", key: "source" },
+            { in: "body", key: "data" },
+            { in: "body", key: "dedupeKey" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<MonitorSendResponses, MonitorSendErrors, ThrowOnError>({
+      url: "/monitor/{sessionID}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Get a monitoring signal
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      signalID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<MonitorGetResponses, MonitorGetErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "path", key: "signalID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<MonitorGetResponses, MonitorGetErrors, ThrowOnError>({
+      url: "/monitor/{sessionID}/{signalID}",
+      ...options,
+      ...params,
+    })
+  }
+}
+
 export class Memory extends HeyApiClient {
   /**
    * List memories
@@ -6395,6 +6513,11 @@ export class MerakCodeClient extends HeyApiClient {
   private _task?: Task
   get task(): Task {
     return (this._task ??= new Task({ client: this.client }))
+  }
+
+  private _monitor?: Monitor
+  get monitor(): Monitor {
+    return (this._monitor ??= new Monitor({ client: this.client }))
   }
 
   private _memory?: Memory
