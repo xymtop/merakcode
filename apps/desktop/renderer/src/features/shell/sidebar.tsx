@@ -4,7 +4,9 @@ import Ellipsis from "lucide-solid/icons/ellipsis"
 import FolderOpen from "lucide-solid/icons/folder-open"
 import GitBranch from "lucide-solid/icons/git-branch"
 import LoaderCircle from "lucide-solid/icons/loader-circle"
+import ListTodo from "lucide-solid/icons/list-todo"
 import MessageSquare from "lucide-solid/icons/message-square"
+import MessagesSquare from "lucide-solid/icons/messages-square"
 import Plus from "lucide-solid/icons/plus"
 import Users from "lucide-solid/icons/users"
 import BookUser from "lucide-solid/icons/book-user"
@@ -17,7 +19,7 @@ import { A, useNavigate } from "@solidjs/router"
 import { ago, t } from "../../i18n"
 import { bridge } from "../../lib/bridge"
 import { coworkerIdOf, isCoworkerSession } from "../../lib/coworker"
-import { baseName, coworkerChatPath, coworkerPath, sameDir, sessionPath } from "../../lib/route"
+import { baseName, coworkerChatPath, coworkerPath, sameDir, sessionPath, taskPath, topicPath } from "../../lib/route"
 import { call, client } from "../../state/client"
 import {
   allSessionsOf,
@@ -354,7 +356,7 @@ function UpdateNotice() {
 export function PrimaryNav(props: {
   directory?: string
   current?: string
-  active?: "messages" | "settings" | "coworker"
+  active?: "messages" | "settings" | "coworker" | "topics" | "tasks"
   close?: () => void
 }) {
   const navigate = useNavigate()
@@ -390,6 +392,30 @@ export function PrimaryNav(props: {
         >
           <BookUser class="icon" />
           <span>{t("coworker.nav")}</span>
+        </button>
+        <button
+          class="primary-link"
+          aria-current={props.active === "topics" ? "page" : undefined}
+          disabled={!directory()}
+          onClick={() => {
+            leave()
+            if (directory()) navigate(topicPath(directory()!))
+          }}
+        >
+          <MessagesSquare class="icon" />
+          <span>{t("topic.nav")}</span>
+        </button>
+        <button
+          class="primary-link"
+          aria-current={props.active === "tasks" ? "page" : undefined}
+          disabled={!directory()}
+          onClick={() => {
+            leave()
+            if (directory()) navigate(taskPath(directory()!))
+          }}
+        >
+          <ListTodo class="icon" />
+          <span>{t("task.nav")}</span>
         </button>
       </div>
       <span class="spacer" />

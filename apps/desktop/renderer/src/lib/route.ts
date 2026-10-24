@@ -20,8 +20,12 @@ export function decodeDir(segment: string) {
 export const sessionPath = (directory: string, sessionID?: string) =>
   `/${encodeDir(directory)}/session${sessionID ? `/${encodeURIComponent(sessionID)}` : ""}`
 
-/** all-chat: contacts, world, bindings, and agent DMs */
-export const coworkerPath = (directory: string, coworkerID?: string, tab?: "world" | "groups" | "bindings") => {
+/** all-chat: contacts, world, activity, bindings, and agent DMs */
+export const coworkerPath = (
+  directory: string,
+  coworkerID?: string,
+  tab?: "world" | "activity" | "groups" | "bindings",
+) => {
   const base = `/${encodeDir(directory)}/coworker`
   if (!coworkerID) return base
   const path = `${base}/${encodeURIComponent(coworkerID)}`
@@ -32,6 +36,12 @@ export const coworkerChatPath = (directory: string, coworkerID: string, sessionI
   `/${encodeDir(directory)}/coworker/${encodeURIComponent(coworkerID)}/chat${
     sessionID ? `/${encodeURIComponent(sessionID)}` : ""
   }`
+
+export const topicPath = (directory: string, sessionID?: string) =>
+  `/${encodeDir(directory)}/topics${sessionID ? `/${encodeURIComponent(sessionID)}` : ""}`
+
+export const taskPath = (directory: string, taskID?: string) =>
+  `/${encodeDir(directory)}/tasks${taskID ? `/${encodeURIComponent(taskID)}` : ""}`
 
 /**
  * Treats spellings of one directory (case, slash direction, trailing slash) as equal; case-insensitive on Windows and

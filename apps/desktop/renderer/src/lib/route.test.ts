@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest"
-import { baseName, decodeDir, encodeDir, relative, sameDir, sessionPath } from "./route"
+import { baseName, coworkerPath, decodeDir, encodeDir, relative, sameDir, sessionPath, taskPath } from "./route"
 
 describe("in-app routes", () => {
   test("encodes a directory as a URL-safe segment that round-trips non-ASCII, spaces and backslashes", () => {
@@ -10,6 +10,8 @@ describe("in-app routes", () => {
     }
     expect(sessionPath("/p", "ses_1")).toBe(`/${encodeDir("/p")}/session/ses_1`)
     expect(sessionPath("/p")).toBe(`/${encodeDir("/p")}/session`)
+    expect(taskPath("/p", "task_1")).toBe(`/${encodeDir("/p")}/tasks/task_1`)
+    expect(coworkerPath("/p", "agent_1", "activity")).toBe(`/${encodeDir("/p")}/coworker/agent_1/activity`)
   })
 
   test("matches spellings of the same directory and derives base names and relative paths", () => {

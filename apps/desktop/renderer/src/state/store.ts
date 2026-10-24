@@ -333,6 +333,7 @@ export function allSessionsOf(folder: Folder) {
       (session) =>
         !session.parentID &&
         session.projectID === project.id &&
+        !["topic", "topic-agent"].includes(String(session.metadata?.kind)) &&
         (project.id !== "global" || sameDir(session.directory, folder.directory)),
     )
     .toSorted((a, b) => b.time.updated - a.time.updated)

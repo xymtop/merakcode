@@ -142,6 +142,7 @@ export function Conversation(props: {
   coworkerID?: string
   onOpenSettings?: () => void
   onOpenWorld?: () => void
+  onOpenActivity?: () => void
   onOpenGroups?: () => void
   onOpenChat?: () => void
 }) {
@@ -323,6 +324,9 @@ export function Conversation(props: {
                 </button>
                 <button class="agent-tab" onClick={props.onOpenWorld}>
                   {t("coworker.world")}
+                </button>
+                <button class="agent-tab" onClick={props.onOpenActivity}>
+                  {t("coworker.activity")}
                 </button>
                 <button class="agent-tab" onClick={props.onOpenGroups}>
                   {t("coworker.groups")}

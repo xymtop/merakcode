@@ -15,12 +15,13 @@ import { PrimaryNav, Sidebar } from "../shell/sidebar"
 import { toast } from "../../ui/toast"
 import { Conversation } from "../conversation/page"
 import { AgentAvatar } from "./avatar"
+import { AgentActivity } from "./activity"
 import { Contacts } from "./contacts"
 import { AgentSettings } from "./settings"
 import { startCoworkerChat } from "./start-chat"
 import { WorldEditor } from "./world"
 
-type AgentTab = "world" | "groups" | "bindings"
+type AgentTab = "world" | "activity" | "groups" | "bindings"
 
 function AgentHeader(props: { info?: Coworker; coworkerID: string }) {
   return (
@@ -40,7 +41,7 @@ function AgentHeader(props: { info?: Coworker; coworkerID: string }) {
 function AgentTabs(props: {
   directory: string
   coworkerID: string
-  active: "chat" | "world" | "groups"
+  active: "chat" | "world" | "activity" | "groups"
   onChat: () => void
 }) {
   const navigate = useNavigate()
@@ -55,6 +56,13 @@ function AgentTabs(props: {
         onClick={() => navigate(coworkerPath(props.directory, props.coworkerID, "world"))}
       >
         {t("coworker.world")}
+      </button>
+      <button
+        class="agent-tab"
+        aria-current={props.active === "activity" ? "page" : undefined}
+        onClick={() => navigate(coworkerPath(props.directory, props.coworkerID, "activity"))}
+      >
+        {t("coworker.activity")}
       </button>
       <button
         class="agent-tab"
@@ -76,7 +84,9 @@ function AgentGroups(props: { directory: string; coworkerID: string }) {
   const mine = createMemo(() =>
     (groups() ?? []).filter(
       (group: CollaborationGroupSummary) =>
-        sameDir(group.directory, props.directory) && group.seats.some((seat) => seat.coworkerID === props.coworkerID),
+        group.kind !== "topic" &&
+        sameDir(group.directory, props.directory) &&
+        group.seats.some((seat) => seat.coworkerID === props.coworkerID),
     ),
   )
   return (
@@ -149,12 +159,15 @@ function CoworkerWorkspacePane(props: { directory: string; coworkerID: string; t
           <AgentTabs
             directory={props.directory}
             coworkerID={props.coworkerID}
-            active={props.tab === "groups" ? "groups" : props.tab === "bindings" ? "world" : "world"}
+            active={props.tab === "groups" ? "groups" : props.tab === "activity" ? "activity" : "world"}
             onChat={() => void chat()}
           />
           <Switch>
             <Match when={tab() === "groups"}>
               <AgentGroups directory={props.directory} coworkerID={props.coworkerID} />
+            </Match>
+            <Match when={tab() === "activity"}>
+              <AgentActivity directory={props.directory} coworkerID={props.coworkerID} />
             </Match>
             <Match when={true}>
               <WorldEditor directory={props.directory} coworkerID={props.coworkerID} />
@@ -253,6 +266,7 @@ function CoworkerShell(props: { directory: string; coworkerID?: string; tab?: Ag
                 coworkerID={id()}
                 onOpenSettings={() => setSettings(true)}
                 onOpenWorld={() => navigate(coworkerPath(props.directory, id(), "world"))}
+                onOpenActivity={() => navigate(coworkerPath(props.directory, id(), "activity"))}
                 onOpenGroups={() => navigate(coworkerPath(props.directory, id(), "groups"))}
                 onOpenChat={() => void chat()}
               />
@@ -289,6 +303,7 @@ export function CoworkerWorkspace() {
   const tab = createMemo((): AgentTab | undefined => {
     if (params.tab === "bindings") return "bindings"
     if (params.tab === "groups") return "groups"
+    if (params.tab === "activity") return "activity"
     if (params.tab === "world") return "world"
     return undefined
   })

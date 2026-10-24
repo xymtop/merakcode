@@ -16,6 +16,8 @@ import { Settings } from "./features/settings/settings"
 import { Notify } from "./features/shell/notify"
 import { pickFolder, Sidebar } from "./features/shell/sidebar"
 import { Startup } from "./features/shell/startup"
+import { TaskWorkspace } from "./features/task/page"
+import { TopicWorkspace } from "./features/topic/page"
 
 /** Global shortcuts, ⌘/Ctrl plus: K palette, N new conversation, G new team, "," settings, J terminal, B side panel */
 function Shortcuts() {
@@ -161,6 +163,8 @@ export function App() {
       <Route path="/:dir/coworker/:coworkerID/chat/:sessionID?" component={CoworkerWorkspace} />
       <Route path="/:dir/coworker/:coworkerID/:tab?" component={CoworkerWorkspace} />
       <Route path="/:dir/coworker" component={CoworkerWorkspace} />
+      <Route path="/:dir/topics/:id?" component={TopicWorkspace} />
+      <Route path="/:dir/tasks/:id?" component={TaskWorkspace} />
       <Route path="*" component={() => <Navigate href="/" />} />
     </Router>
   )

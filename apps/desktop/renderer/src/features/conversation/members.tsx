@@ -36,6 +36,7 @@ function tint(id: string) {
 function productTitle(product: string, products: readonly Product[]) {
   // The leader is always MerakCode, known before the product list arrives
   if (product === "merak") return "MerakCode"
+  if (product === "user") return t("topic.user")
   return products.find((item) => item.id === product)?.title ?? product
 }
 
