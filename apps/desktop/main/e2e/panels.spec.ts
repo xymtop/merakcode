@@ -15,7 +15,7 @@ test("code: opens a file from the tree and saves edits to disk with Ctrl+S", asy
   await editor.click()
   await kit.page.keyboard.press("Control+End")
   await kit.page.keyboard.type("edited")
-  await kit.page.keyboard.press("Control+S")
+  await kit.page.keyboard.press(process.platform === "darwin" ? "Meta+S" : "Control+S")
   await expect.poll(() => readFile(path.join(kit.project, "notes.txt"), "utf8")).toBe("hello from e2e\nedited")
 })
 

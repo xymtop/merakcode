@@ -50,7 +50,7 @@ test("writes in a new worktree without touching the main tree; merging brings th
   await expect(kit.text(/已合并到/)).toBeVisible()
   await expect.poll(() => worktrees(kit)).toBe(0)
   await expect(sidebar.getByRole("link")).toHaveCount(0)
-  await expect(kit.page.getByText("要在 project 里做什么？")).toBeVisible()
+  await expect(kit.page.getByRole("heading", { name: "和 MerakCode 聊聊" })).toBeVisible()
 })
 
 test("deleting a worktree removes it with its branch and conversation, leaving the main tree alone", async ({

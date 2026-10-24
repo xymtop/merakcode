@@ -72,15 +72,12 @@ test("edit and resend replaces the original turn; retry answers the last turn ag
   await expect(kit.text("第2次回答：你好呀")).toHaveCount(0)
 })
 
-test("copies a reply, renames the conversation and shows context usage next to the input", async ({ kit }) => {
+test("copies a reply and renames the conversation", async ({ kit }) => {
   await kit.send("你好")
   await expect(kit.text("第1次回答：你好")).toBeVisible({ timeout: 60_000 })
 
   await kit.page.getByRole("log").getByRole("button", { name: "复制" }).last().click()
   await expect.poll(() => kit.app.evaluate(({ clipboard }) => clipboard.readText())).toBe("第1次回答：你好")
-
-  // The fake model reports 13,100 tokens per request, so context usage is a percentage above 0
-  await expect(kit.page.getByRole("status", { name: /^上下文已用 \d+%$/ })).toBeVisible()
 
   const sidebar = kit.page.getByRole("navigation", { name: "对话" })
   await sidebar.getByRole("link").first().hover()

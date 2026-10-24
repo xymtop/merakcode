@@ -2,7 +2,7 @@ import FolderOpen from "lucide-solid/icons/folder-open"
 import { createEffect, createMemo, createResource, onCleanup, onMount, Show, untrack, type JSX } from "solid-js"
 import { Navigate, Route, Router, useLocation, useNavigate, useParams } from "@solidjs/router"
 import { t } from "./i18n"
-import { bridge, log, mac } from "./lib/bridge"
+import { bridge, log } from "./lib/bridge"
 import { decodeDir, sessionPath } from "./lib/route"
 import { bootstrap, connect, openFolder, state } from "./state/store"
 import { restoreLayout, setUi, togglePanel, ui } from "./state/ui"
@@ -23,7 +23,7 @@ function Shortcuts() {
   const directory = () => decodeDir(location.pathname.split("/")[1] ?? "") || state.folders[0]?.directory
   onMount(() => {
     const listener = (event: KeyboardEvent) => {
-      const command = mac ? event.metaKey : event.ctrlKey
+      const command = event.metaKey || event.ctrlKey
       if (!command || event.altKey || event.isComposing) return
       const key = event.key.toLowerCase()
       if (key === "k") setUi("palette", !ui.palette)

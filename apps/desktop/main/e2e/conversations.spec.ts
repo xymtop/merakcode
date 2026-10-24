@@ -68,5 +68,5 @@ test("command palette opens with Ctrl+K and runs the typed command on Enter", as
   await palette.getByRole("combobox").fill("新对话")
   await kit.page.keyboard.press("Enter")
   await expect(palette).toHaveCount(0)
-  await expect(kit.page.getByText("要在 project 里做什么？")).toBeVisible()
+  await expect(kit.page.getByRole("heading", { name: "和 MerakCode 聊聊" })).toBeVisible()
 })

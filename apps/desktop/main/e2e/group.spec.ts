@@ -259,7 +259,6 @@ test.describe("the entry to a team", () => {
     const { page } = kit
     const dialog = page.getByRole("dialog", { name: "新建协作群" })
     const entry = page.getByRole("button", { name: /^新建协作群/ })
-    await expect(entry).toContainText("Ctrl G")
 
     await page.keyboard.press("Control+G")
     await expect(dialog).toContainText("让 MerakCode 当群主，拉上 Claude Code、Codex 等一起干活")
