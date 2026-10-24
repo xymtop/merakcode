@@ -1148,6 +1148,27 @@ export type EventPtyDeleted = {
   }
 }
 
+export type EventActivityUpdated = {
+  type: "activity.updated"
+  properties: {
+    coworkerID: string
+  }
+}
+
+export type EventTopicUpdated = {
+  type: "topic.updated"
+  properties: {
+    topicID: string
+  }
+}
+
+export type EventTaskUpdated = {
+  type: "task.updated"
+  properties: {
+    taskID: string
+  }
+}
+
 export type EventWorktreeReady = {
   type: "worktree.ready"
   properties: {
@@ -1214,6 +1235,9 @@ export type Event =
   | EventPtyUpdated
   | EventPtyExited
   | EventPtyDeleted
+  | EventActivityUpdated
+  | EventTopicUpdated
+  | EventTaskUpdated
   | EventWorktreeReady
   | EventWorktreeFailed
   | EventReviewUpdated
@@ -3546,6 +3570,7 @@ export type CollaborationGroupSummary = {
   sessionID: string
   title: string
   directory: string
+  kind?: string
   seats: Array<{
     name: string
     role: string
@@ -3610,6 +3635,89 @@ export type CoworkerWorldNode = {
   relative: string
   type: "file" | "directory"
   children?: Array<CoworkerWorldNode>
+}
+
+export type TopicActor = {
+  type: "user" | "agent"
+  id: string
+  name: string
+}
+
+export type TopicParticipant = {
+  coworkerID: string
+  name: string
+  duty: string
+}
+
+export type TopicComment = {
+  id: string
+  author: TopicActor
+  content: string
+  mentions: Array<TopicActor>
+  createdAt: number
+}
+
+export type TopicWorkingAgent = {
+  coworkerID: string
+  name: string
+}
+
+export type Topic = {
+  id: string
+  title: string
+  body: string
+  author: TopicActor
+  participants: Array<TopicParticipant>
+  comments: Array<TopicComment>
+  working: Array<TopicWorkingAgent>
+  createdAt: number
+  updatedAt: number
+}
+
+export type AgentActivity = {
+  id: string
+  coworkerID: string
+  direction: "received" | "sent" | "action"
+  kind: string
+  title: string
+  detail?: string
+  resource?: {
+    type: string
+    id: string
+    title?: string
+  }
+  createdAt: number
+}
+
+export type TaskAssignee = {
+  coworkerID: string
+  name: string
+}
+
+export type TaskActor = {
+  type: "user" | "agent"
+  id: string
+  name: string
+}
+
+export type TaskComment = {
+  id: string
+  author: TaskActor
+  content: string
+  createdAt: number
+}
+
+export type Task = {
+  id: string
+  title: string
+  description: string
+  status: "todo" | "doing" | "done"
+  priority: "low" | "medium" | "high"
+  assignee?: TaskAssignee
+  creator: TaskActor
+  comments: Array<TaskComment>
+  createdAt: number
+  updatedAt: number
 }
 
 export type MemoryEntry = {
@@ -7333,6 +7441,348 @@ export type CoworkerWorldSearchResponses = {
 }
 
 export type CoworkerWorldSearchResponse = CoworkerWorldSearchResponses[keyof CoworkerWorldSearchResponses]
+
+export type TopicListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/topic"
+}
+
+export type TopicListErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type TopicListError = TopicListErrors[keyof TopicListErrors]
+
+export type TopicListResponses = {
+  /**
+   * Topics in the current project
+   */
+  200: Array<Topic>
+}
+
+export type TopicListResponse = TopicListResponses[keyof TopicListResponses]
+
+export type TopicCreateData = {
+  body: {
+    title: string
+    body: string
+    participants: Array<string>
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/topic"
+}
+
+export type TopicCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+}
+
+export type TopicCreateError = TopicCreateErrors[keyof TopicCreateErrors]
+
+export type TopicCreateResponses = {
+  /**
+   * Created topic
+   */
+  200: Topic
+}
+
+export type TopicCreateResponse = TopicCreateResponses[keyof TopicCreateResponses]
+
+export type TopicGetData = {
+  body?: never
+  path: {
+    topicID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/topic/{topicID}"
+}
+
+export type TopicGetErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type TopicGetError = TopicGetErrors[keyof TopicGetErrors]
+
+export type TopicGetResponses = {
+  /**
+   * Topic
+   */
+  200: Topic
+}
+
+export type TopicGetResponse = TopicGetResponses[keyof TopicGetResponses]
+
+export type TopicCommentData = {
+  body: {
+    content: string
+  }
+  path: {
+    topicID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/topic/{topicID}/comment"
+}
+
+export type TopicCommentErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type TopicCommentError = TopicCommentErrors[keyof TopicCommentErrors]
+
+export type TopicCommentResponses = {
+  /**
+   * Updated topic
+   */
+  200: Topic
+}
+
+export type TopicCommentResponse = TopicCommentResponses[keyof TopicCommentResponses]
+
+export type ActivityListData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+    limit?: number
+  }
+  url: "/activity/{coworkerID}"
+}
+
+export type ActivityListErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type ActivityListError = ActivityListErrors[keyof ActivityListErrors]
+
+export type ActivityListResponses = {
+  /**
+   * Activity events, newest first
+   */
+  200: Array<AgentActivity>
+}
+
+export type ActivityListResponse = ActivityListResponses[keyof ActivityListResponses]
+
+export type TaskListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/task"
+}
+
+export type TaskListErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type TaskListError = TaskListErrors[keyof TaskListErrors]
+
+export type TaskListResponses = {
+  /**
+   * Tasks in the current project
+   */
+  200: Array<Task>
+}
+
+export type TaskListResponse = TaskListResponses[keyof TaskListResponses]
+
+export type TaskCreateData = {
+  body: {
+    title: string
+    description?: string
+    priority?: "low" | "medium" | "high"
+    assigneeID?: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/task"
+}
+
+export type TaskCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+}
+
+export type TaskCreateError = TaskCreateErrors[keyof TaskCreateErrors]
+
+export type TaskCreateResponses = {
+  /**
+   * Created task
+   */
+  200: Task
+}
+
+export type TaskCreateResponse = TaskCreateResponses[keyof TaskCreateResponses]
+
+export type TaskGetData = {
+  body?: never
+  path: {
+    taskID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/task/{taskID}"
+}
+
+export type TaskGetErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type TaskGetError = TaskGetErrors[keyof TaskGetErrors]
+
+export type TaskGetResponses = {
+  /**
+   * Task
+   */
+  200: Task
+}
+
+export type TaskGetResponse = TaskGetResponses[keyof TaskGetResponses]
+
+export type TaskUpdateData = {
+  body?: {
+    title?: string
+    description?: string
+    status?: "todo" | "doing" | "done"
+    priority?: "low" | "medium" | "high"
+    assigneeID?: string | null
+  }
+  path: {
+    taskID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/task/{taskID}"
+}
+
+export type TaskUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type TaskUpdateError = TaskUpdateErrors[keyof TaskUpdateErrors]
+
+export type TaskUpdateResponses = {
+  /**
+   * Updated task
+   */
+  200: Task
+}
+
+export type TaskUpdateResponse = TaskUpdateResponses[keyof TaskUpdateResponses]
+
+export type TaskCommentData = {
+  body: {
+    content: string
+  }
+  path: {
+    taskID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/task/{taskID}/comment"
+}
+
+export type TaskCommentErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type TaskCommentError = TaskCommentErrors[keyof TaskCommentErrors]
+
+export type TaskCommentResponses = {
+  /**
+   * Updated task
+   */
+  200: Task
+}
+
+export type TaskCommentResponse = TaskCommentResponses[keyof TaskCommentResponses]
 
 export type MemoryListData = {
   body?: never

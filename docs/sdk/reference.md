@@ -28,6 +28,9 @@ already fills in from `createMerakCodeClient({ directory })`, so it is left out 
 - [coworker.profile](#coworkerprofile)
 - [coworker.bindings](#coworkerbindings)
 - [coworker.world](#coworkerworld)
+- [topic](#topic)
+- [activity](#activity)
+- [task](#task)
 - [memory](#memory)
 - [bash](#bash)
 - [tool.remote](#toolremote)
@@ -1355,6 +1358,141 @@ Search coworker world files.
 | `q`          | `string` | yes      |             |
 
 Returns: `({ relative: string; path: string; kind: "name" \| "content" })[]`
+
+## topic
+
+### client.topic.list
+
+`GET /topic` · operationId `topic.list`
+
+List discussion topics.
+
+No parameters.
+
+Returns: `Topic[]`
+
+### client.topic.create
+
+`POST /topic` · operationId `topic.create`
+
+Create a discussion topic.
+
+| Parameter      | Type       | Required | Description |
+| -------------- | ---------- | -------- | ----------- |
+| `title`        | `string`   | yes      |             |
+| `body`         | `string`   | yes      |             |
+| `participants` | `string[]` | yes      |             |
+
+Returns: `Topic`
+
+### client.topic.get
+
+`GET /topic/{topicID}` · operationId `topic.get`
+
+Get a discussion topic.
+
+| Parameter | Type     | Required | Description |
+| --------- | -------- | -------- | ----------- |
+| `topicID` | `string` | yes      |             |
+
+Returns: `Topic`
+
+### client.topic.comment
+
+`POST /topic/{topicID}/comment` · operationId `topic.comment`
+
+Comment on a discussion topic.
+
+| Parameter | Type     | Required | Description |
+| --------- | -------- | -------- | ----------- |
+| `topicID` | `string` | yes      |             |
+| `content` | `string` | yes      |             |
+
+Returns: `Topic`
+
+## activity
+
+### client.activity.list
+
+`GET /activity/{coworkerID}` · operationId `activity.list`
+
+Get an agent activity timeline.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `limit`      | `number` | no       |             |
+
+Returns: `AgentActivity[]`
+
+## task
+
+### client.task.list
+
+`GET /task` · operationId `task.list`
+
+List tasks.
+
+No parameters.
+
+Returns: `Task[]`
+
+### client.task.create
+
+`POST /task` · operationId `task.create`
+
+Create a task.
+
+| Parameter     | Type                          | Required | Description |
+| ------------- | ----------------------------- | -------- | ----------- |
+| `title`       | `string`                      | yes      |             |
+| `description` | `string`                      | no       |             |
+| `priority`    | `"low" \| "medium" \| "high"` | no       |             |
+| `assigneeID`  | `string`                      | no       |             |
+
+Returns: `Task`
+
+### client.task.get
+
+`GET /task/{taskID}` · operationId `task.get`
+
+Get a task.
+
+| Parameter | Type     | Required | Description |
+| --------- | -------- | -------- | ----------- |
+| `taskID`  | `string` | yes      |             |
+
+Returns: `Task`
+
+### client.task.update
+
+`PATCH /task/{taskID}` · operationId `task.update`
+
+Update a task.
+
+| Parameter     | Type                          | Required | Description |
+| ------------- | ----------------------------- | -------- | ----------- |
+| `taskID`      | `string`                      | yes      |             |
+| `title`       | `string`                      | no       |             |
+| `description` | `string`                      | no       |             |
+| `status`      | `"todo" \| "doing" \| "done"` | no       |             |
+| `priority`    | `"low" \| "medium" \| "high"` | no       |             |
+| `assigneeID`  | `string \| null`              | no       |             |
+
+Returns: `Task`
+
+### client.task.comment
+
+`POST /task/{taskID}/comment` · operationId `task.comment`
+
+Comment on a task.
+
+| Parameter | Type     | Required | Description |
+| --------- | -------- | -------- | ----------- |
+| `taskID`  | `string` | yes      |             |
+| `content` | `string` | yes      |             |
+
+Returns: `Task`
 
 ## memory
 

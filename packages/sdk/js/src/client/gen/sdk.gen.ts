@@ -11,6 +11,8 @@ import {
   type TDataShape,
 } from "./client/index.js"
 import type {
+  ActivityListErrors,
+  ActivityListResponses,
   AgentPartInput,
   AppAgentGenerateErrors,
   AppAgentGenerateResponses,
@@ -322,6 +324,16 @@ import type {
   SkillUninstallErrors,
   SkillUninstallResponses,
   SubtaskPartInput,
+  TaskCommentErrors,
+  TaskCommentResponses,
+  TaskCreateErrors,
+  TaskCreateResponses,
+  TaskGetErrors,
+  TaskGetResponses,
+  TaskListErrors,
+  TaskListResponses,
+  TaskUpdateErrors,
+  TaskUpdateResponses,
   TextPartInput,
   ToolIdsErrors,
   ToolIdsResponses,
@@ -331,6 +343,14 @@ import type {
   ToolRemoteRegisterResponses,
   ToolRemoteResultErrors,
   ToolRemoteResultResponses,
+  TopicCommentErrors,
+  TopicCommentResponses,
+  TopicCreateErrors,
+  TopicCreateResponses,
+  TopicGetErrors,
+  TopicGetResponses,
+  TopicListErrors,
+  TopicListResponses,
   VcsBranchesErrors,
   VcsBranchesResponses,
   VcsCommitErrors,
@@ -3513,6 +3533,321 @@ export class Coworker extends HeyApiClient {
   }
 }
 
+export class Topic extends HeyApiClient {
+  /**
+   * List discussion topics
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TopicListResponses, TopicListErrors, ThrowOnError> {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<TopicListResponses, TopicListErrors, ThrowOnError>({
+      url: "/topic",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Create a discussion topic
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters: {
+      directory?: string
+      title: string
+      body: string
+      participants: Array<string>
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TopicCreateResponses, TopicCreateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "title" },
+            { in: "body", key: "body" },
+            { in: "body", key: "participants" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<TopicCreateResponses, TopicCreateErrors, ThrowOnError>({
+      url: "/topic",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Get a discussion topic
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      topicID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TopicGetResponses, TopicGetErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "topicID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<TopicGetResponses, TopicGetErrors, ThrowOnError>({
+      url: "/topic/{topicID}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Comment on a discussion topic
+   */
+  public comment<ThrowOnError extends boolean = false>(
+    parameters: {
+      topicID: string
+      directory?: string
+      content: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TopicCommentResponses, TopicCommentErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "topicID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "content" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<TopicCommentResponses, TopicCommentErrors, ThrowOnError>({
+      url: "/topic/{topicID}/comment",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Activity extends HeyApiClient {
+  /**
+   * Get an agent activity timeline
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      limit?: number
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<ActivityListResponses, ActivityListErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "limit" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<ActivityListResponses, ActivityListErrors, ThrowOnError>({
+      url: "/activity/{coworkerID}",
+      ...options,
+      ...params,
+    })
+  }
+}
+
+export class Task extends HeyApiClient {
+  /**
+   * List tasks
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TaskListResponses, TaskListErrors, ThrowOnError> {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<TaskListResponses, TaskListErrors, ThrowOnError>({
+      url: "/task",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Create a task
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters: {
+      directory?: string
+      title: string
+      description?: string
+      priority?: "low" | "medium" | "high"
+      assigneeID?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TaskCreateResponses, TaskCreateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "title" },
+            { in: "body", key: "description" },
+            { in: "body", key: "priority" },
+            { in: "body", key: "assigneeID" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<TaskCreateResponses, TaskCreateErrors, ThrowOnError>({
+      url: "/task",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Get a task
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      taskID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TaskGetResponses, TaskGetErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "taskID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<TaskGetResponses, TaskGetErrors, ThrowOnError>({
+      url: "/task/{taskID}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Update a task
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      taskID: string
+      directory?: string
+      title?: string
+      description?: string
+      status?: "todo" | "doing" | "done"
+      priority?: "low" | "medium" | "high"
+      assigneeID?: string | null
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TaskUpdateResponses, TaskUpdateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "taskID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "title" },
+            { in: "body", key: "description" },
+            { in: "body", key: "status" },
+            { in: "body", key: "priority" },
+            { in: "body", key: "assigneeID" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<TaskUpdateResponses, TaskUpdateErrors, ThrowOnError>({
+      url: "/task/{taskID}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Comment on a task
+   */
+  public comment<ThrowOnError extends boolean = false>(
+    parameters: {
+      taskID: string
+      directory?: string
+      content: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<TaskCommentResponses, TaskCommentErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "taskID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "content" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<TaskCommentResponses, TaskCommentErrors, ThrowOnError>({
+      url: "/task/{taskID}/comment",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
 export class Memory extends HeyApiClient {
   /**
    * List memories
@@ -6045,6 +6380,21 @@ export class MerakCodeClient extends HeyApiClient {
   private _coworker?: Coworker
   get coworker(): Coworker {
     return (this._coworker ??= new Coworker({ client: this.client }))
+  }
+
+  private _topic?: Topic
+  get topic(): Topic {
+    return (this._topic ??= new Topic({ client: this.client }))
+  }
+
+  private _activity?: Activity
+  get activity(): Activity {
+    return (this._activity ??= new Activity({ client: this.client }))
+  }
+
+  private _task?: Task
+  get task(): Task {
+    return (this._task ??= new Task({ client: this.client }))
   }
 
   private _memory?: Memory
