@@ -145,6 +145,9 @@ function UserBubble(props: { message: UserMessage; sessionID: string; directory:
           </Show>
           <div class="user-text">{text()}</div>
         </div>
+        <span class="message-avatar user-avatar" aria-hidden="true">
+          {t("conversation.you").slice(0, 1)}
+        </span>
       </article>
     </Show>
   )
@@ -283,8 +286,18 @@ function Reply(props: {
         </div>
       }
     >
-      <Blocks blocks={list()} done={done} directory={props.directory} onReviewFile={props.onReviewFile} />
-      <ErrorCard message={props.message} />
+      <div class="assistant-turn">
+        <span class="message-avatar assistant-avatar" aria-hidden="true">
+          <img src="/logo.svg" alt="" />
+        </span>
+        <div class="assistant-content">
+          <div class="assistant-name">{t("app.name")}</div>
+          <div class="assistant-body">
+            <Blocks blocks={list()} done={done} directory={props.directory} onReviewFile={props.onReviewFile} />
+            <ErrorCard message={props.message} />
+          </div>
+        </div>
+      </div>
     </Show>
   )
 }

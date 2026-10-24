@@ -2,9 +2,9 @@ import type { Session } from "@merakcode/sdk/client"
 import CircleHelp from "lucide-solid/icons/circle-question-mark"
 import Ellipsis from "lucide-solid/icons/ellipsis"
 import FolderOpen from "lucide-solid/icons/folder-open"
-import FolderPlus from "lucide-solid/icons/folder-plus"
 import GitBranch from "lucide-solid/icons/git-branch"
 import LoaderCircle from "lucide-solid/icons/loader-circle"
+import MessageSquare from "lucide-solid/icons/message-square"
 import Plus from "lucide-solid/icons/plus"
 import Users from "lucide-solid/icons/users"
 import Search from "lucide-solid/icons/search"
@@ -76,6 +76,11 @@ function GroupNames(props: { sessionID: string; directory: string }) {
   )
 }
 
+function tone(id: string) {
+  const hash = [...id].reduce((value, character) => (value * 31 + character.charCodeAt(0)) | 0, 0)
+  return ["blue", "green", "purple", "orange"][Math.abs(hash) % 4]
+}
+
 function Conversation(props: { session: Session; folder: Folder; current?: string }) {
   const navigate = useNavigate()
   const [deleting, setDeleting] = createSignal(false)
@@ -103,7 +108,21 @@ function Conversation(props: { session: Session; folder: Folder; current?: strin
         class="conversation"
         aria-current={props.current === props.session.id ? "page" : undefined}
       >
-        <Status status={status()} />
+        <span
+          class="conversation-avatar"
+          data-group={props.session.metadata?.group === true ? "" : undefined}
+          data-tone={tone(props.session.id)}
+          aria-hidden="true"
+        >
+          <Show when={props.session.metadata?.group === true} fallback={<MessageSquare class="icon" />}>
+            <Users class="icon" />
+          </Show>
+          <Show when={status() !== "idle"}>
+            <span class="conversation-presence">
+              <Status status={status()} />
+            </span>
+          </Show>
+        </span>
         <span class="body">
           <span class="title">
             {props.session.title || t("sidebar.untitled")}
@@ -167,7 +186,11 @@ function Group(props: { folder: Folder; current?: string; route?: string }) {
     navigate(next ? sessionPath(next.directory) : "/")
   }
   return (
-    <section class="group" aria-label={name()}>
+    <section
+      class="group"
+      classList={{ current: !!props.route && sameDir(props.route, props.folder.directory) }}
+      aria-label={name()}
+    >
       <div class="group-title">
         <FolderOpen class="icon icon-sm" />
         <span class="ellipsis">{name()}</span>
@@ -187,7 +210,14 @@ function Group(props: { folder: Folder; current?: string; route?: string }) {
           ]}
         />
       </div>
-      <For each={list()} fallback={<div class="group-empty subtle">{t("sidebar.empty")}</div>}>
+      <For
+        each={list()}
+        fallback={
+          <Show when={!!props.route && sameDir(props.route, props.folder.directory)}>
+            <div class="group-empty subtle">{t("sidebar.empty")}</div>
+          </Show>
+        }
+      >
         {(session) => <Conversation session={session} folder={props.folder} current={props.current} />}
       </For>
       <Show when={props.folder.more}>
@@ -196,6 +226,26 @@ function Group(props: { folder: Folder; current?: string; route?: string }) {
         </button>
       </Show>
     </section>
+  )
+}
+
+function SessionList(props: { directory?: string; current?: string }) {
+  const count = () => state.folders.reduce((total, folder) => total + sessionsOf(folder).length, 0)
+  return (
+    <div class="sessions-pane">
+      <div class="sessions-head drag">
+        <div class="sessions-title">
+          <span>{t("sidebar.messages")}</span>
+          <span class="sessions-count">{count()}</span>
+        </div>
+      </div>
+      <div class="sessions-scroll scroll">
+        <For each={state.folders} fallback={<div class="sessions-empty subtle">{t("sidebar.empty")}</div>}>
+          {(folder) => <Group folder={folder} current={props.current} route={props.directory} />}
+        </For>
+      </div>
+      <UpdateNotice />
+    </div>
   )
 }
 
@@ -220,60 +270,96 @@ function UpdateNotice() {
   )
 }
 
-/** Sidebar: new conversation, search, conversations grouped by project (with run status), settings */
-export function Sidebar(props: { directory?: string; current?: string }) {
+/** Primary navigation is shared by the chat and settings screens so the Feishu sidebar never changes identity */
+export function PrimaryNav(props: {
+  directory?: string
+  current?: string
+  active?: "messages" | "settings"
+  close?: () => void
+}) {
   const navigate = useNavigate()
   const directory = () => props.directory ?? state.folders[0]?.directory
+  const leave = () => props.close?.()
   const newConversation = () => {
+    leave()
     const dir = directory()
     if (dir) navigate(sessionPath(dir))
     else void pickFolder(navigate)
   }
   return (
-    <nav class="sidebar" aria-label={t("sidebar.label")}>
-      <div class="sidebar-top drag">
-        <div class="brand">
-          <img src="/logo.svg" alt="" />
-          {t("app.name")}
-        </div>
+    <div class="primary-nav">
+      <div class="primary-brand drag">
+        <img src="/logo.svg" alt="" />
+        <span>{t("app.name")}</span>
       </div>
-      <div class="sidebar-actions">
-        <button class="nav-row" onClick={newConversation}>
+      <button
+        class="primary-search"
+        onClick={() => {
+          leave()
+          setUi("palette", true)
+        }}
+      >
+        <Search class="icon icon-sm" />
+        <span>{t("sidebar.search")}</span>
+        <kbd aria-hidden="true">{mod} K</kbd>
+      </button>
+      <div class="primary-links">
+        <button
+          class="primary-link"
+          aria-current={props.active !== "settings" ? "page" : undefined}
+          disabled={!directory()}
+          onClick={() => {
+            leave()
+            if (directory()) navigate(sessionPath(directory()!, props.current))
+          }}
+        >
+          <MessageSquare class="icon" />
+          <span>{t("sidebar.messages")}</span>
+          <span class="primary-count">
+            {state.folders.reduce((count, folder) => count + sessionsOf(folder).length, 0)}
+          </span>
+        </button>
+        <button class="primary-link" onClick={newConversation}>
           <Plus class="icon" />
-          {t("sidebar.new")}
-          <kbd aria-hidden="true">{mod} N</kbd>
-        </button>
-        <button class="nav-row" disabled={!directory()} onClick={() => setUi("newTeam", true)}>
-          <Users class="icon" />
-          {t("sidebar.group")}
-          <kbd aria-hidden="true">{mod} G</kbd>
-        </button>
-        <button class="nav-row" onClick={() => setUi("palette", true)}>
-          <Search class="icon" />
-          {t("sidebar.search")}
-          <kbd aria-hidden="true">{mod} K</kbd>
-        </button>
-      </div>
-      <div class="sidebar-scroll scroll">
-        <For each={state.folders}>
-          {(folder) => <Group folder={folder} current={props.current} route={props.directory} />}
-        </For>
-      </div>
-      <UpdateNotice />
-      <div class="sidebar-bottom">
-        <button class="nav-row grow" onClick={() => setUi("settings", "general")}>
-          <Settings class="icon" />
-          {t("sidebar.settings")}
+          <span>{t("sidebar.new")}</span>
         </button>
         <button
-          class="icon-button"
-          aria-label={t("sidebar.openProject")}
-          title={t("sidebar.openProject")}
-          onClick={() => void pickFolder(navigate)}
+          class="primary-link"
+          disabled={!directory()}
+          onClick={() => {
+            leave()
+            setUi("newTeam", true)
+          }}
         >
-          <FolderPlus class="icon" />
+          <Users class="icon" />
+          <span>{t("sidebar.group")}</span>
+          <span class="sr-only">Ctrl G</span>
         </button>
       </div>
+      <span class="spacer" />
+      <button
+        class="primary-link primary-settings"
+        aria-current={props.active === "settings" ? "page" : undefined}
+        onClick={() => {
+          if (props.active !== "settings") leave()
+          setUi("settings", "general")
+        }}
+      >
+        <Settings class="icon" />
+        <span>{t("sidebar.settings")}</span>
+      </button>
+    </div>
+  )
+}
+
+/** Chat shell: fixed navigation, conversation list, and the routed chat in the main area */
+export function Sidebar(props: { directory?: string; current?: string }) {
+  const navigate = useNavigate()
+  const directory = () => props.directory ?? state.folders[0]?.directory
+  return (
+    <nav class="sidebar" aria-label={t("sidebar.label")}>
+      <PrimaryNav directory={directory()} current={props.current} active="messages" />
+      <SessionList directory={directory()} current={props.current} />
       <Show when={directory()}>
         {(dir) => (
           <GroupCreate

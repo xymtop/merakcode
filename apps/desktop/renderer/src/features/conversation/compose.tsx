@@ -6,7 +6,6 @@ import { produce } from "solid-js/store"
 import { applyEvent } from "@merakcode/sdk/store"
 import { useNavigate } from "@solidjs/router"
 import { t } from "../../i18n"
-import { mac } from "../../lib/bridge"
 import { baseName, sessionPath } from "../../lib/route"
 import { choice, choose } from "../../state/models"
 import { call, client } from "../../state/client"
@@ -16,8 +15,6 @@ import { Frame } from "../shell/frame"
 import { toast } from "../../ui/toast"
 import { Composer, type Submission } from "./composer"
 import { createWorktree, send } from "./send"
-
-const mod = mac ? "⌘" : "Ctrl"
 
 /**
  * New conversation: choose where it runs (the current directory or a new worktree); the session is created only when
@@ -56,7 +53,17 @@ export function Compose(props: { directory: string }) {
   return (
     <Frame title={<span class="title">{t("sidebar.new")}</span>} directory={props.directory} folder={props.directory}>
       <div class="compose-page">
-        <h1 class="compose-heading">{t("compose.heading", { name: baseName(props.directory) })}</h1>
+        <div class="compose-empty">
+          <div class="compose-greeting">
+            <span class="compose-avatar">
+              <img src="/logo.svg" alt="" />
+            </span>
+            <div>
+              <h1 class="compose-heading">{t("compose.heading")}</h1>
+              <p class="compose-lead">{t("compose.lead")}</p>
+            </div>
+          </div>
+        </div>
         <div class="compose-wrap">
           <div class="context-row">
             <span class="chip outlined">
@@ -93,20 +100,6 @@ export function Compose(props: { directory: string }) {
             onSubmit={submit}
             onMode={(mode) => choose(undefined, props.directory, { mode })}
           />
-          <div class="hints">
-            <span>
-              <kbd>{mod} K</kbd>
-              {t("compose.hint.palette")}
-            </span>
-            <span>
-              <kbd>{mod} J</kbd>
-              {t("compose.hint.terminal")}
-            </span>
-            <span>
-              <kbd>Shift Tab</kbd>
-              {t("compose.hint.mode")}
-            </span>
-          </div>
         </div>
       </div>
     </Frame>

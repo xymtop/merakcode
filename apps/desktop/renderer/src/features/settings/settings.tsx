@@ -1,4 +1,3 @@
-import ArrowLeft from "lucide-solid/icons/arrow-left"
 import Blocks from "lucide-solid/icons/blocks"
 import Brain from "lucide-solid/icons/brain"
 import Cpu from "lucide-solid/icons/cpu"
@@ -12,6 +11,7 @@ import SettingsIcon from "lucide-solid/icons/settings"
 import ShieldCheck from "lucide-solid/icons/shield-check"
 import Trash2 from "lucide-solid/icons/trash"
 import Users from "lucide-solid/icons/users"
+import X from "lucide-solid/icons/x"
 import { createResource, createSignal, For, Match, onCleanup, onMount, Show, Switch as Pick } from "solid-js"
 import { Dynamic } from "solid-js/web"
 import type { Theme } from "../../desktop/bridge-contract"
@@ -29,6 +29,7 @@ import { Confirm } from "../../ui/dialog"
 import { toast } from "../../ui/toast"
 import { trackOverlay } from "../../ui/overlay"
 import { modeOptions } from "../conversation/composer"
+import { PrimaryNav } from "../shell/sidebar"
 import { CustomDialog } from "./relay-dialog"
 import { updateState } from "../update/state"
 import { Row, Section } from "./layout"
@@ -1190,23 +1191,34 @@ export function Settings() {
   const current = () => SECTIONS.find((section) => section.id === ui.settings) ?? SECTIONS[0]!
   return (
     <div class="settings-layer app">
+      <nav class="settings-primary" aria-label={t("sidebar.label")}>
+        <PrimaryNav directory={project()} active="settings" close={() => setUi("settings", undefined)} />
+      </nav>
       <nav class="settings-nav" aria-label={t("settings.title")}>
-        <button class="back drag-none" onClick={() => setUi("settings", undefined)}>
-          <ArrowLeft class="icon icon-sm" />
-          {t("settings.back")}
-        </button>
-        <For each={SECTIONS}>
-          {(section) => (
-            <button
-              class="nav-row"
-              aria-current={current().id === section.id ? "page" : undefined}
-              onClick={() => setUi("settings", section.id)}
-            >
-              <section.icon class="icon" />
-              {section.label()}
-            </button>
-          )}
-        </For>
+        <div class="settings-nav-title drag">
+          <span>{t("settings.title")}</span>
+          <button
+            class="icon-button sm drag-none"
+            aria-label={t("common.close")}
+            onClick={() => setUi("settings", undefined)}
+          >
+            <X class="icon icon-sm" />
+          </button>
+        </div>
+        <div class="settings-nav-list">
+          <For each={SECTIONS}>
+            {(section) => (
+              <button
+                class="nav-row"
+                aria-current={current().id === section.id ? "page" : undefined}
+                onClick={() => setUi("settings", section.id)}
+              >
+                <section.icon class="icon" />
+                {section.label()}
+              </button>
+            )}
+          </For>
+        </div>
       </nav>
       <main class="main">
         <div class="topbar drag">

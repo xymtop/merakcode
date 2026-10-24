@@ -213,6 +213,11 @@ export function Conversation(props: { id: string; directory: string }) {
                 </button>
               )}
             </Show>
+            <span class="topbar-avatar" data-group={isGroup() ? "" : undefined} aria-hidden="true">
+              <Show when={isGroup()} fallback={<img src="/logo.svg" alt="" />}>
+                <Users class="icon" />
+              </Show>
+            </span>
             <span class="title ellipsis">{info()?.title ?? ""}</span>
             <Show when={group.group()}>
               {(value) => (
