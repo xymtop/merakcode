@@ -223,6 +223,8 @@ All from the repo root:
 
 When adding a business mini-app for users and agents, follow the [mini-app development guide](docs/apps.md) for its data, API, MCP, event, and UI layers.
 
+Scripts that send folder, log, process, or metric changes to an agent should use the [agent monitoring contract](docs/agent-monitoring.md) and the built-in `agent-monitor` skill.
+
 The `merak` program plays two roles:
 
 - **Client.** `run`, `acp` and the management commands never load the engine. They use the SDK's `startEngine` to launch a `merak serve` child process (the same program) and talk to it over HTTP and an event stream. The desktop app does the same.
