@@ -15,7 +15,7 @@ export namespace SessionNotification {
   export const Info = z.object({
     id: z.string(),
     sessionID: z.string(),
-    type: z.literal("workflow.finished"),
+    type: z.enum(["workflow.finished", "monitor.signal"]),
     createdAt: z.number(),
     text: z.string(),
     agent: z.string().optional(),
@@ -124,15 +124,26 @@ export namespace SessionNotification {
   }
 
   export function promptText(items: Info[]) {
+    const workflows = items.filter((item) => item.type === "workflow.finished")
+    const monitors = items.filter((item) => item.type === "monitor.signal")
     return [
       "<system-reminder>",
-      "The following background workflow notification(s) were delivered by the system.",
+      "The following background notifications were delivered by the system.",
       "These notifications are internal system signals, not direct user messages. Do not thank or acknowledge the notification itself.",
-      "Each listed workflow has already reached a terminal status. Do not say it is still running, do not ask the user to wait, and do not call workflow_run again for these completed runs unless the user explicitly asks for a new run.",
-      "Present the result directly in this conversation and mention failures only when the notification reports them.",
+      workflows.length
+        ? "Each listed workflow has already reached a terminal status. Do not say it is still running, do not ask the user to wait, and do not call workflow_run again for these completed runs unless the user explicitly asks for a new run."
+        : "",
+      monitors.length
+        ? "Monitoring signals come from scripts or external sources observed by this session. Evaluate whether they require action. Report only information that is useful to the user; do not repeat raw payloads."
+        : "",
+      workflows.length
+        ? "Present workflow results directly in this conversation and mention failures only when reported."
+        : "",
       "</system-reminder>",
       "",
       ...items.map((item) => item.text),
-    ].join("\n")
+    ]
+      .filter((line) => line !== "")
+      .join("\n")
   }
 }

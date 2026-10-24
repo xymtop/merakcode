@@ -43,6 +43,8 @@ import { CoworkerRoutes } from "./routes/coworker"
 import { TopicRoutes } from "./routes/topic"
 import { ActivityRoutes } from "./routes/activity"
 import { TaskRoutes } from "./routes/task"
+import { MonitorRoutes } from "./routes/monitor"
+import { Monitor } from "../monitor/monitor"
 import { ConfigRoutes } from "./routes/config"
 import { ExperimentalRoutes } from "./routes/experimental"
 import { ProviderRoutes } from "./routes/provider"
@@ -208,6 +210,13 @@ export namespace Server {
         // Allow CORS preflight requests to succeed without auth.
         // Browser clients sending Authorization headers will preflight with OPTIONS.
         if (c.req.method === "OPTIONS") return next()
+        // Monitoring scripts use a session-scoped Bearer capability rather than the engine password. The route itself
+        // verifies the token and can only enqueue a signal for the session encoded in this path.
+        const monitorPath = /^\/monitor\/([^/]+)$/.exec(c.req.path)
+        if (c.req.method === "POST" && monitorPath) {
+          const sessionID = decodeURIComponent(monitorPath[1]!)
+          if (Monitor.authorize(sessionID, c.req.header("authorization"))) return next()
+        }
         const password = getLocalSecret()
         if (!password) return next()
         const username = Flag.MERAKCODE_SERVER_USERNAME ?? "merakcode"
@@ -414,6 +423,7 @@ export namespace Server {
       .route("/topic", TopicRoutes())
       .route("/activity", ActivityRoutes())
       .route("/task", TaskRoutes())
+      .route("/monitor", MonitorRoutes())
       // Memory management (for people) must be mounted after the directory middleware: the memory directory is
       // located by Instance.worktree, which is wrong outside the Instance context.
       .route("/memory", MemoryRoutes())

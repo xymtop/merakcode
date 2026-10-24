@@ -92,7 +92,15 @@ export async function prepareBashCommand(
   // Same shell.env input as @opencode-ai/plugin@1.16.2, including session and call ids, so plugins can inject a
   // different environment per session
   const shellEnv = await Plugin.trigger("shell.env", { cwd, sessionID: ctx.sessionID, callID: ctx.callID }, { env: {} })
-  return { cwd, shellEnv: shellEnv.env as Record<string, string>, readOnly: analysis.readOnly, sandbox }
+  const { Monitor } = await import("../monitor/monitor")
+  const { Server } = await import("../server/server")
+  const monitorEnv: Record<string, string> = ctx.sessionID ? Monitor.environment(ctx.sessionID, Server.url()) : {}
+  return {
+    cwd,
+    shellEnv: { ...(shellEnv.env as Record<string, string>), ...monitorEnv } as Record<string, string>,
+    readOnly: analysis.readOnly,
+    sandbox,
+  }
 }
 
 /** Extra permissions the agent requests when a command needs to leave the sandbox; approved under the sandbox key */
