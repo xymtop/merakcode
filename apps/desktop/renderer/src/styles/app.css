@@ -626,19 +626,12 @@
   border-color: var(--border-strong);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--border-strong) 45%, transparent);
 }
-.composer-main {
-  display: flex;
-  align-items: flex-end;
-  min-width: 0;
-}
 .composer-input {
   display: block;
-  flex: 1;
   width: 100%;
-  height: 48px;
-  min-height: 48px;
-  max-height: 200px;
-  padding: 13px 4px 13px 16px;
+  min-height: 72px;
+  max-height: 320px;
+  padding: 14px 16px 6px;
   border: 0;
   outline: none;
   resize: none;
@@ -647,36 +640,15 @@
   line-height: var(--leading);
 }
 .composer.compact .composer-input {
-  height: 48px;
-  min-height: 48px;
-  padding: 13px 4px 13px 15px;
+  min-height: 46px;
+  padding: 11px 14px 2px;
 }
 .composer-bar {
   display: flex;
   align-items: center;
   gap: 2px;
-  align-self: flex-end;
-  padding: 8px 8px 8px 4px;
+  padding: 6px 8px 8px;
   min-width: 0;
-  flex: none;
-}
-.composer-bar .chip[aria-label] {
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: var(--text-muted);
-}
-.composer-bar .chip[aria-label] .select-value {
-  gap: 0;
-}
-.composer-bar .chip[aria-label] .select-value span,
-.composer-bar .chip[aria-label] > span.ellipsis,
-.composer-bar .chip[aria-label] .chevron {
-  display: none;
-}
-.composer-bar .usage {
-  display: none;
 }
 .attachments {
   display: flex;

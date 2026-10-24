@@ -356,87 +356,86 @@ export function Composer(props: {
           </For>
         </div>
       </Show>
-      <div class="composer-main">
-        <textarea
-          ref={input}
-          class="composer-input selectable"
-          rows={1}
-          aria-label={t("prompt.label")}
-          aria-controls={open() ? "composer-suggest" : undefined}
-          aria-activedescendant={open() ? `composer-suggest-${active()}` : undefined}
-          placeholder={props.placeholder ?? (props.busy ? t("prompt.placeholderBusy") : t("prompt.placeholder"))}
-          value={text()}
-          onInput={(event) => {
-            setText(event.currentTarget.value)
-            setActive(0)
-            detect()
-            resize()
-          }}
-          onClick={detect}
-          onBlur={() => setAt(undefined)}
-          onKeyDown={keydown}
-          onPaste={paste}
-        />
-        <div class="composer-bar">
-          <Show when={!connected()}>
-            <button class="chip accent" onClick={() => setUi("settings", "models")}>
-              {t("prompt.noModel")}
-            </button>
-          </Show>
-          <Show when={props.sessionID}>{(id) => <Usage sessionID={id()} />}</Show>
-          <Show when={connected()}>
-            <ModelPicker
-              value={current().model}
-              onChange={(model) => choose(props.sessionID, props.directory, { model, variant: undefined })}
-            />
-          </Show>
-          <Show when={variants().length}>
-            <Select
-              label={t("model.variant")}
-              options={[
-                { value: "default", label: t("model.variant.default") },
-                ...variants().map((value) => ({ value, label: value })),
-              ]}
-              value={current().variant ?? "default"}
-              onChange={(variant) =>
-                choose(props.sessionID, props.directory, { variant: variant === "default" ? undefined : variant })
-              }
-              display={(option) => (
-                <>
-                  <Brain class="icon icon-sm" />
-                  <span>{option && option.value !== "default" ? option.label : t("model.variant")}</span>
-                </>
-              )}
-            />
-          </Show>
-          <Select label={t("mode.label")} options={modeOptions()} value={current().mode} onChange={setMode} />
-          <button class="icon-button" aria-label={t("prompt.attach")} onClick={() => void pick()}>
-            <Paperclip class="icon" />
+      <textarea
+        ref={input}
+        class="composer-input selectable"
+        rows={props.compact ? 1 : 3}
+        aria-label={t("prompt.label")}
+        aria-controls={open() ? "composer-suggest" : undefined}
+        aria-activedescendant={open() ? `composer-suggest-${active()}` : undefined}
+        placeholder={props.placeholder ?? (props.busy ? t("prompt.placeholderBusy") : t("prompt.placeholder"))}
+        value={text()}
+        onInput={(event) => {
+          setText(event.currentTarget.value)
+          setActive(0)
+          detect()
+          resize()
+        }}
+        onClick={detect}
+        onBlur={() => setAt(undefined)}
+        onKeyDown={keydown}
+        onPaste={paste}
+      />
+      <div class="composer-bar">
+        <button class="icon-button" aria-label={t("prompt.attach")} onClick={() => void pick()}>
+          <Paperclip class="icon" />
+        </button>
+        <Show when={!connected()}>
+          <button class="chip accent" onClick={() => setUi("settings", "models")}>
+            {t("prompt.noModel")}
           </button>
-          <Show
-            when={props.busy && !text().trim()}
-            fallback={
-              <button
-                class="icon-button solid"
-                aria-label={t("prompt.send")}
-                title={`${t("prompt.send")} (Enter)`}
-                disabled={(!text().trim() && !files().length) || sending()}
-                onClick={() => void submit()}
-              >
-                <ArrowUp class="icon" />
-              </button>
+        </Show>
+        <span class="spacer" />
+        <Show when={props.sessionID}>{(id) => <Usage sessionID={id()} />}</Show>
+        <Show when={connected()}>
+          <ModelPicker
+            value={current().model}
+            onChange={(model) => choose(props.sessionID, props.directory, { model, variant: undefined })}
+          />
+        </Show>
+        <Show when={variants().length}>
+          <Select
+            label={t("model.variant")}
+            options={[
+              { value: "default", label: t("model.variant.default") },
+              ...variants().map((value) => ({ value, label: value })),
+            ]}
+            value={current().variant ?? "default"}
+            onChange={(variant) =>
+              choose(props.sessionID, props.directory, { variant: variant === "default" ? undefined : variant })
             }
-          >
+            display={(option) => (
+              <>
+                <Brain class="icon icon-sm" />
+                <span>{option && option.value !== "default" ? option.label : t("model.variant")}</span>
+              </>
+            )}
+          />
+        </Show>
+        <Select label={t("mode.label")} options={modeOptions()} value={current().mode} onChange={setMode} />
+        <Show
+          when={props.busy && !text().trim()}
+          fallback={
             <button
-              class="icon-button solid stop"
-              aria-label={t("prompt.stop")}
-              title={mac ? "⌘." : "Esc"}
-              onClick={() => props.onStop?.()}
+              class="icon-button solid"
+              aria-label={t("prompt.send")}
+              title={`${t("prompt.send")} (Enter)`}
+              disabled={(!text().trim() && !files().length) || sending()}
+              onClick={() => void submit()}
             >
-              <Square class="icon icon-xs" />
+              <ArrowUp class="icon" />
             </button>
-          </Show>
-        </div>
+          }
+        >
+          <button
+            class="icon-button solid stop"
+            aria-label={t("prompt.stop")}
+            title={mac ? "⌘." : "Esc"}
+            onClick={() => props.onStop?.()}
+          >
+            <Square class="icon icon-xs" />
+          </button>
+        </Show>
       </div>
     </div>
   )
