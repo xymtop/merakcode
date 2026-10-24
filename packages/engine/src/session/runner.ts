@@ -2524,7 +2524,7 @@ export namespace SessionRunner {
 
     // The MCP tool list does not change within one resolveTools call, so fetch it once instead of repeating listTools
     // round trips. Agents whose pool lacks "mcp" (narrow pools such as compaction or memory-extractor) skip it.
-    const mcpTools = allowMcp ? await MCP.tools(input.agent.id) : {}
+    const mcpTools = allowMcp ? await MCP.tools(input.agent.id, input.session.id) : {}
     // Server names for expandMcpServerActivation come from the clients actually connected in this process, not every
     // configured server: tools of disabled or failed servers are not in mcpTools anyway. clients() only holds live
     // connections and is the same source MCP.tools() uses.

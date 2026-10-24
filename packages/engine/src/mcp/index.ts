@@ -153,6 +153,7 @@ export namespace MCP {
     client: MCPClient,
     timeout?: number,
     actorID?: string,
+    sessionID?: string,
   ): Promise<Tool> {
     const inputSchema = mcpTool.inputSchema
 
@@ -172,7 +173,17 @@ export namespace MCP {
           {
             name: mcpTool.name,
             arguments: (args || {}) as Record<string, unknown>,
-            ...(actorID ? { _meta: { "merakcode/actor": { type: "agent", id: actorID } } } : {}),
+            ...(actorID
+              ? {
+                  _meta: {
+                    "merakcode/actor": {
+                      type: "agent",
+                      id: actorID,
+                      ...(sessionID ? { sessionID } : {}),
+                    },
+                  },
+                }
+              : {}),
           },
           CallToolResultSchema,
           {
@@ -715,7 +726,7 @@ export namespace MCP {
       : { ok: true as const }
   }
 
-  export async function tools(actorID?: string) {
+  export async function tools(actorID?: string, sessionID?: string) {
     const result: Record<string, Tool> = {}
     const s = await state()
     const cfg = await Config.get()
@@ -773,7 +784,7 @@ export namespace MCP {
         const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9_-]/g, "_")
         const sanitizedToolName = mcpTool.name.replace(/[^a-zA-Z0-9_-]/g, "_")
         const id = sanitizedClientName + "_" + sanitizedToolName
-        const tool = await convertMcpTool(mcpTool, client, timeout, actorID)
+        const tool = await convertMcpTool(mcpTool, client, timeout, actorID, sessionID)
         // Deferred MCP tools (as in Claude Code): only an explicit deferred:true defers a tool; otherwise it stays
         // loaded. The __deferred marker lets runner/context-view leave it out of the tools array. It is an extra
         // property rather than a change to the return type of tools(), which would affect every caller.

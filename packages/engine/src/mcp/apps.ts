@@ -10,6 +10,7 @@ export namespace AppMCP {
   type ActorMeta = {
     type: "agent"
     id: string
+    sessionID?: string
   }
 
   function actor(meta: Record<string, unknown> | undefined): ActorMeta | undefined {
@@ -17,7 +18,11 @@ export namespace AppMCP {
     if (!value || typeof value !== "object") return
     const record = value as Record<string, unknown>
     if (record.type !== "agent" || typeof record.id !== "string") return
-    return { type: "agent", id: record.id }
+    return {
+      type: "agent",
+      id: record.id,
+      ...(typeof record.sessionID === "string" ? { sessionID: record.sessionID } : {}),
+    }
   }
 
   function text(value: string, error = false) {
@@ -265,6 +270,39 @@ export namespace AppMCP {
             name: coworker.name,
           })
           return text(`Comment added to task "${task.title}".`)
+        } catch (error) {
+          return text(error instanceof Error ? error.message : String(error), true)
+        }
+      },
+    )
+
+    server.registerTool(
+      "monitor_send",
+      {
+        title: "Send monitoring data to this session",
+        description:
+          "Queue structured monitoring data for the calling agent's current session. The data is delivered as a system notification after the current turn becomes idle.",
+        inputSchema: z.object({
+          title: z.string(),
+          message: z.string(),
+          severity: z.enum(["info", "warning", "error"]).optional(),
+          source: z.string().optional(),
+          data: z.unknown().optional(),
+          dedupeKey: z.string().optional(),
+        }),
+      },
+      async (input, extra) => {
+        try {
+          const current = actor(extra._meta)
+          if (!current?.sessionID) return text("Missing MerakCode session identity", true)
+          const coworker = await agent(extra._meta)
+          const { Monitor } = await import("../monitor/monitor")
+          const signal = await Monitor.send({
+            ...input,
+            sessionID: current.sessionID,
+            source: input.source ?? `agent:${coworker.id}`,
+          })
+          return text(`Queued monitoring signal "${signal.title}" (${signal.id}).`)
         } catch (error) {
           return text(error instanceof Error ? error.message : String(error), true)
         }

@@ -496,6 +496,9 @@ test("set_enabled true reports connect failure without changing persisted state"
     await Instance.provide({
       directory: tmp.path,
       fn: async () => {
+        // Initialize the built-in in-memory MCP client first: the mocked Client counts every connect attempt, and the
+        // failure below belongs to the configured server only.
+        await MCP.status()
         connectFailures = 1
         const result = await McpManagement.change({ type: "set_enabled", name: "toggle", enabled: true })
         expect(result).toMatchObject({

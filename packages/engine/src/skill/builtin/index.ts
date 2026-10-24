@@ -3,6 +3,7 @@ import { ADAPTER_GENERATOR_SKILL } from "./adapter-generator"
 import { PDF_SKILL } from "./pdf"
 import { EXCEL_SKILL } from "./excel"
 import { DOCX_SKILL } from "./docx"
+import { AGENT_MONITOR_SKILL } from "./agent-monitor"
 
 export type BuiltinSkill = {
   name: string
@@ -24,4 +25,5 @@ export const BUILTIN_SKILLS: Record<string, BuiltinSkill> = {
   pdf: PDF_SKILL,
   excel: EXCEL_SKILL,
   docx: DOCX_SKILL,
+  "agent-monitor": AGENT_MONITOR_SKILL,
 }

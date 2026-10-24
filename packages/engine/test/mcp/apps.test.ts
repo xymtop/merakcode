@@ -3,6 +3,10 @@ import { AppMCP } from "@merakcode/engine/mcp/apps"
 import { MCP } from "@merakcode/engine/mcp/index"
 import { Coworker } from "@merakcode/engine/coworker/coworker"
 import { Instance } from "@merakcode/engine/project/instance"
+import { Monitor } from "@merakcode/engine/monitor/monitor"
+import { Session } from "@merakcode/engine/session/index"
+import { SessionNotification } from "@merakcode/engine/session/notification"
+import { SessionStatus } from "@merakcode/engine/session/status"
 import { Topic } from "@merakcode/engine/topic/topic"
 import { Task } from "@merakcode/engine/task/task"
 import { tmpdir } from "../fixture/fixture"
@@ -14,11 +18,16 @@ test("the built-in app MCP server exposes and executes topic tools with agent id
     fn: async () => {
       const agent = await Coworker.create({ name: "林澈", duty: "负责架构" })
       const peer = await Coworker.create({ name: "苏简", duty: "负责整理" })
+      const session = await Session.create({
+        title: agent.name,
+        metadata: { kind: "coworker", coworkerId: agent.id },
+      })
       const { client, server } = await AppMCP.create()
       try {
         const listed = await client.listTools()
         expect(listed.tools.map((tool) => tool.name).sort()).toEqual([
           "activity_list",
+          "monitor_send",
           "todo_comment",
           "todo_create",
           "todo_list",
@@ -31,7 +40,7 @@ test("the built-in app MCP server exposes and executes topic tools with agent id
         ])
 
         const mine = {
-          "merakcode/actor": { type: "agent", id: agent.id },
+          "merakcode/actor": { type: "agent", id: agent.id, sessionID: session.id },
         }
         await client.callTool({
           name: "topic_create",
@@ -74,6 +83,27 @@ test("the built-in app MCP server exposes and executes topic tools with agent id
           _meta: mine,
         })
         expect((await Task.get(task!.id))?.status).toBe("done")
+
+        SessionStatus.set(session.id, { type: "busy" })
+        await client.callTool({
+          name: "monitor_send",
+          arguments: {
+            title: "构建产物更新",
+            message: "检测到 dist 目录变化",
+            source: "test-watcher",
+            data: { files: 2 },
+          },
+          _meta: mine,
+        })
+        expect(await Monitor.list(session.id)).toEqual([
+          expect.objectContaining({
+            title: "构建产物更新",
+            coworkerID: agent.id,
+            source: "test-watcher",
+          }),
+        ])
+        expect(await SessionNotification.list(session.id)).toHaveLength(1)
+        await SessionNotification.drain(session.id)
       } finally {
         await client.close()
         await server.close()
@@ -91,6 +121,7 @@ test("the MCP manager automatically exposes the built-in app server", async () =
       const tools = await MCP.tools(agent.id)
       expect(Object.keys(tools).sort()).toEqual([
         "merak-apps_activity_list",
+        "merak-apps_monitor_send",
         "merak-apps_todo_comment",
         "merak-apps_todo_create",
         "merak-apps_todo_list",

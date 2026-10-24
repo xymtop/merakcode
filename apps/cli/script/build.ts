@@ -182,16 +182,13 @@ async function bundle(out: string) {
     )
   // The output is ESM: without "type", Node first parses it as CommonJS, retries, and prints a warning
   await Filesystem.write(path.join(out, "package.json"), JSON.stringify({ type: "module" }, null, 2) + "\n")
-  // The adapter-generator skill's files, read by the engine and copied by the model (see
-  // packages/engine/src/skill/builtin/adapter-generator/index.ts); its code is bundled
-  await fs.cp(
-    path.join(root, "packages/engine/src/skill/builtin/adapter-generator"),
-    path.join(out, "skills", "adapter-generator"),
-    {
+  // File-backed built-in skills read their examples and templates from lib/skills/ at runtime.
+  for (const skill of ["adapter-generator", "agent-monitor"]) {
+    await fs.cp(path.join(root, "packages/engine/src/skill/builtin", skill), path.join(out, "skills", skill), {
       recursive: true,
       filter: (file) => path.basename(file) !== "index.ts",
-    },
-  )
+    })
+  }
   // esbuild drops license comments (legalComments: "none"); ship the full list of bundled packages instead
   const workspaces = ["apps/cli", "packages/engine", "packages/sdk/js", "packages/util", "packages/log"]
   await Filesystem.write(
