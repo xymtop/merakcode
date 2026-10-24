@@ -125,15 +125,19 @@ pre,
   justify-content: center;
   gap: 6px;
   height: var(--control-height);
-  padding: 0 10px;
+  padding: 0 12px;
   border-radius: var(--radius);
   border: 1px solid transparent;
   font-size: var(--text-base);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text);
   background: transparent;
   white-space: nowrap;
   flex: none;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 .button:hover {
   background: var(--surface-hover);
@@ -145,20 +149,32 @@ pre,
 .button.primary {
   background: var(--accent);
   color: var(--text-inverse);
+  border-color: var(--accent);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 24%, transparent);
 }
 .button.primary:hover {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 .button.secondary {
   background: var(--surface);
   border-color: var(--border-strong);
-  box-shadow: var(--shadow-sm);
 }
 .button.secondary:hover {
-  background: var(--surface-hover);
+  background: var(--bg-subtle);
+  border-color: var(--text-subtle);
 }
 .button.danger {
   color: var(--danger-text);
+}
+.button.primary.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--text-inverse);
+}
+.button.primary.danger:hover {
+  background: color-mix(in srgb, var(--danger) 86%, var(--text));
+  border-color: color-mix(in srgb, var(--danger) 86%, var(--text));
 }
 .button.accept {
   color: var(--success-text);
@@ -208,6 +224,9 @@ pre,
   border: 0;
   background: transparent;
   flex: none;
+  transition:
+    color 120ms ease,
+    background-color 120ms ease;
 }
 .icon-button:hover,
 .icon-button[aria-pressed="true"],
@@ -245,15 +264,15 @@ pre,
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 26px;
-  padding: 0 8px;
+  gap: 6px;
+  height: 30px;
+  padding: 0 9px;
   border-radius: var(--radius);
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
   font-size: var(--text-sm);
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   max-width: 260px;
 }
@@ -264,7 +283,7 @@ pre,
 }
 .chip.outlined {
   border-color: var(--border);
-  background: var(--surface);
+  background: var(--bg-subtle);
 }
 .chip.accent,
 .chip[aria-checked="true"] {
@@ -290,10 +309,10 @@ pre,
   align-items: center;
   gap: 8px;
   width: 240px;
-  height: 32px;
+  height: 34px;
   padding: 0 8px 0 10px;
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius);
   background: var(--surface);
   color: var(--text);
   font-size: var(--text-base);
@@ -345,11 +364,11 @@ pre,
 /* Segmented control (radiogroup) */
 .segmented {
   display: inline-flex;
-  padding: 2px;
+  padding: 3px;
   gap: 2px;
   border-radius: var(--radius-md);
   background: var(--surface-muted);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
   flex: none;
 }
 /* Descendants, not children: a hint wraps its option, and a dropdown can sit in the group as one more option */
@@ -357,10 +376,10 @@ pre,
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  height: 22px;
-  padding: 0 9px;
+  height: 24px;
+  padding: 0 10px;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   background: transparent;
   font-size: var(--text-sm);
   font-weight: 500;
@@ -393,12 +412,15 @@ pre,
 .input {
   width: 100%;
   height: 32px;
-  padding: 0 10px;
-  border-radius: var(--radius-md);
+  padding: 0 11px;
+  border-radius: var(--radius);
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
   font-size: var(--text-base);
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
 }
 .input::placeholder,
 textarea::placeholder {
@@ -408,12 +430,12 @@ textarea::placeholder {
 textarea.input:focus {
   outline: none;
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--focus);
+  box-shadow: 0 0 0 2px var(--focus);
 }
 textarea.input {
   height: auto;
   min-height: 64px;
-  padding: 8px 10px;
+  padding: 9px 11px;
   resize: vertical;
   line-height: var(--leading);
 }
@@ -439,8 +461,8 @@ textarea.input {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  height: 18px;
-  padding: 0 6px;
+  height: 20px;
+  padding: 0 7px;
   border-radius: var(--radius-full);
   font-size: var(--text-xs);
   font-weight: 600;
@@ -493,12 +515,12 @@ kbd {
   display: inline-grid;
   place-items: center;
   min-width: 18px;
-  height: 18px;
-  padding: 0 4px;
+  height: 19px;
+  padding: 0 5px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
-  border-bottom-width: 2px;
-  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom-color: var(--border-strong);
+  background: var(--surface-muted);
   color: var(--text-muted);
   font-size: var(--text-xs);
   line-height: 1;
@@ -550,7 +572,7 @@ kbd {
   width: 14px;
   height: 14px;
   border-radius: var(--radius-full);
-  background: #ffffff;
+  background: var(--switch-thumb);
   box-shadow: var(--shadow-sm);
   transition: left 0.15s;
 }
@@ -596,9 +618,9 @@ kbd {
   min-width: 180px;
   max-width: 360px;
   max-height: min(420px, var(--kb-popper-content-available-height, 420px));
-  padding: 4px;
+  padding: 6px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   background: var(--surface);
   box-shadow: var(--shadow-lg);
   overflow: auto;
@@ -615,14 +637,15 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 28px;
-  padding: 4px 8px;
+  min-height: 32px;
+  padding: 5px 9px;
   border-radius: var(--radius-sm);
   color: var(--text);
   outline: none;
 }
 .menu-item[data-highlighted] {
-  background: var(--surface-hover);
+  background: var(--accent-soft);
+  color: var(--accent-text);
 }
 .menu-item[data-disabled] {
   opacity: 0.5;
@@ -644,16 +667,16 @@ kbd {
 }
 .menu-separator {
   height: 1px;
-  margin: 4px 0;
+  margin: 5px 2px;
   background: var(--border);
   border: 0;
 }
 
 .tooltip {
-  padding: 4px 8px;
+  padding: 5px 9px;
   border-radius: var(--radius);
   background: var(--text);
-  color: var(--bg);
+  color: var(--surface);
   font-size: var(--text-sm);
   z-index: 60;
   display: inline-flex;
@@ -671,6 +694,7 @@ kbd {
   position: fixed;
   inset: 0;
   background: var(--overlay);
+  backdrop-filter: blur(2px);
   z-index: 40;
 }
 .dialog-positioner {
@@ -687,7 +711,7 @@ kbd {
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-xl);
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 84%, transparent);
   background: var(--surface);
   box-shadow: var(--shadow-lg);
   outline: none;
@@ -715,20 +739,20 @@ kbd {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 16px 18px 4px;
+  padding: 20px 22px 4px;
 }
 .dialog-title {
   margin: 0;
-  font-size: var(--text-lg);
+  font-size: 18px;
   font-weight: 600;
 }
 .dialog-desc {
-  padding: 8px 18px 4px;
+  padding: 8px 22px 4px;
   color: var(--text-muted);
   flex: none;
 }
 .dialog-body {
-  padding: 8px 18px 4px;
+  padding: 10px 22px 6px;
   color: var(--text-muted);
   overflow: auto;
 }
@@ -736,7 +760,8 @@ kbd {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  padding: 14px 18px 16px;
+  padding: 16px 22px 20px;
+  border-top: 1px solid var(--border);
 }
 
 /* Toasts */

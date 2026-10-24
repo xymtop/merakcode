@@ -32,8 +32,28 @@ for (const defaults of [ts?.typescriptDefaults, ts?.javascriptDefaults])
  * so it cannot read the minified CSS variables.
  */
 const COLORS = {
-  light: { bg: "#ffffff", line: "#f4f4f5", number: "#9a9aa3", active: "#63636c" },
-  dark: { bg: "#131315", line: "#202024", number: "#6e6e78", active: "#a0a0a9" },
+  light: {
+    bg: "#ffffff",
+    line: "#f7f8fa",
+    number: "#8f959e",
+    active: "#646a73",
+    selection: "#dbe7ff",
+    inactive: "#edf2ff",
+    cursor: "#1456f0",
+    widget: "#ffffff",
+    border: "#e1e3e6",
+  },
+  dark: {
+    bg: "#1e2024",
+    line: "#26292e",
+    number: "#7f858f",
+    active: "#b0b4ba",
+    selection: "#253a63",
+    inactive: "#202b44",
+    cursor: "#6b9cff",
+    widget: "#24272b",
+    border: "#34373d",
+  },
 }
 
 function define() {
@@ -49,6 +69,15 @@ function define() {
       "editor.lineHighlightBackground": color.line,
       "editorLineNumber.foreground": color.number,
       "editorLineNumber.activeForeground": color.active,
+      "editor.selectionBackground": color.selection,
+      "editor.inactiveSelectionBackground": color.inactive,
+      "editorCursor.foreground": color.cursor,
+      "editorWidget.background": color.widget,
+      "editorWidget.border": color.border,
+      "editorSuggestWidget.background": color.widget,
+      "editorSuggestWidget.border": color.border,
+      "editorHoverWidget.background": color.widget,
+      "editorHoverWidget.border": color.border,
     },
   })
   monaco.editor.setTheme("merakcode")

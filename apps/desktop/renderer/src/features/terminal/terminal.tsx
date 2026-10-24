@@ -36,8 +36,8 @@ const load = () =>
 /** Terminal colors, matching tokens.css; written out here because minified CSS variables use shorthand values */
 const colors = () =>
   matchMedia("(prefers-color-scheme: dark)").matches
-    ? { background: "#131315", foreground: "#ededef", cursor: "#6366f1", selectionBackground: "#3730a3" }
-    : { background: "#ffffff", foreground: "#18181b", cursor: "#4f46e5", selectionBackground: "#c7d2fe" }
+    ? { background: "#1b1c1f", foreground: "#f2f3f5", cursor: "#6b9cff", selectionBackground: "#253a63" }
+    : { background: "#f7f8fa", foreground: "#1f2329", cursor: "#1456f0", selectionBackground: "#e1eaff" }
 
 /** The shell in one tab: attaches to (or creates) a terminal process, shows its output and forwards keys */
 function Shell(props: { directory: string; tab: Tab; active: boolean }) {
