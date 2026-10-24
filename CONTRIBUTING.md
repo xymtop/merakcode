@@ -50,6 +50,8 @@ pnpm hooks:install   # 提交前自动检查格式
 | `apps/desktop/main`             | 桌面端主进程（Electron）                                                                         |
 | `apps/desktop/renderer`         | 桌面端界面（SolidJS + Vite，纯 CSS）                                                             |
 
+新增面向智能体和用户的业务小程序时，按[小程序开发规范](docs/apps.md)接入数据层、API、MCP、事件和 UI。
+
 `merak` 这个程序有两种身份：
 
 - **客户端**。`run`、`acp` 和各个管理命令都不加载引擎，而是用 SDK 的 `startEngine` 拉起一个 `merak serve` 子进程（还是同一个程序），再通过 HTTP 和事件流跟它通信。桌面端也一样。
@@ -218,6 +220,8 @@ All from the repo root:
 | `apps/cli`                      | The `merak` program: its commands and `merak serve` (the engine the desktop app ships)                               |
 | `apps/desktop/main`             | Desktop main process (Electron)                                                                                      |
 | `apps/desktop/renderer`         | Desktop UI (SolidJS + Vite, plain CSS)                                                                               |
+
+When adding a business mini-app for users and agents, follow the [mini-app development guide](docs/apps.md) for its data, API, MCP, event, and UI layers.
 
 The `merak` program plays two roles:
 
