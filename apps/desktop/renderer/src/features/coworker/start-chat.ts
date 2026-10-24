@@ -8,13 +8,29 @@ import { choose } from "../../state/models"
 
 /** Reuse the latest DM with this coworker, or create a new session tagged for all-chat. */
 export async function startCoworkerChat(directory: string, coworkerID: string, title?: string) {
+  const coworker = await call(client(directory).coworker.get({ coworkerID }))
+  const applyBindings = (sessionID: string) => {
+    const at = coworker.bindings.model?.indexOf("/") ?? -1
+    choose(sessionID, directory, {
+      model:
+        at > 0
+          ? {
+              providerID: coworker.bindings.model!.slice(0, at),
+              modelID: coworker.bindings.model!.slice(at + 1),
+            }
+          : undefined,
+      variant: undefined,
+    })
+  }
   const folder = folderOf(directory)
   if (folder) {
     const existing = coworkerSessionsOf(folder, coworkerID)[0]
-    if (existing) return existing
+    if (existing) {
+      applyBindings(existing.id)
+      return existing
+    }
   }
 
-  const coworker = await call(client(directory).coworker.get({ coworkerID }))
   const info = await call(
     client(directory).session.create({
       title: title ?? coworker.name,
@@ -26,17 +42,7 @@ export async function startCoworkerChat(directory: string, coworkerID: string, t
     produce((draft) => applyEvent(draft, { type: "session.created", properties: { info } } as Event)),
   )
 
-  if (coworker.bindings.model) {
-    const at = coworker.bindings.model.indexOf("/")
-    if (at > 0) {
-      choose(info.id, directory, {
-        model: {
-          providerID: coworker.bindings.model.slice(0, at),
-          modelID: coworker.bindings.model.slice(at + 1),
-        },
-      })
-    }
-  }
+  applyBindings(info.id)
 
   return info
 }

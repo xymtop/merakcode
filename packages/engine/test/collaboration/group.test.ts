@@ -50,3 +50,25 @@ test("two seats of one product keep their own private session across rename, and
   expect(left.events.at(-1)).toMatchObject({ kind: "leave", names: ["小刚"] })
   expect((await load(sessionID))?.seats.some((seat) => seat.leader)).toBe(true)
 })
+
+test("a seat can stay linked to an existing coworker", async () => {
+  const sessionID = `group-${crypto.randomUUID()}`
+  const group = await create(sessionID, { leader: { name: "小主" } })
+  const joined = await join(sessionID, {
+    name: "林澈",
+    product: "merak",
+    coworkerID: "linche",
+  })
+  expect(joined.seats.find((seat) => seat.name === "林澈")).toMatchObject({
+    product: "merak",
+    coworkerID: "linche",
+  })
+
+  const seat = joined.seats.find((item) => item.coworkerID === "linche")!
+  const updated = await update(sessionID, seat.id, { duty: "负责客户端发布" })
+  expect(updated.seats.find((item) => item.id === seat.id)).toMatchObject({
+    coworkerID: "linche",
+    duty: "负责客户端发布",
+  })
+  expect(group.seats).toHaveLength(1)
+})

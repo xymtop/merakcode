@@ -19,6 +19,7 @@ const Seat = z
     role: z.string(),
     duty: z.string(),
     product: z.string(),
+    coworkerID: z.string().optional(),
     leader: z.boolean(),
     privateSessionID: z.string().optional(),
   })
@@ -99,6 +100,7 @@ const SeatInput = z.object({
   name: z.string(),
   role: z.string().optional().describe("Short title such as product manager"),
   duty: z.string().optional().describe("What the seat is for; it goes into the seat's prompt"),
+  coworkerID: z.string().optional().describe("Saved coworker this seat represents"),
 })
 
 async function fail(error: unknown) {
@@ -229,7 +231,14 @@ export const CollaborationRoutes = lazy(() =>
             sessionID: session.id,
             title: session.title,
             directory: session.directory,
-            seats: group.seats.map(({ name, role, duty, product, leader }) => ({ name, role, duty, product, leader })),
+            seats: group.seats.map(({ name, role, duty, product, coworkerID, leader }) => ({
+              name,
+              role,
+              duty,
+              product,
+              coworkerID,
+              leader,
+            })),
           })),
         ),
     )

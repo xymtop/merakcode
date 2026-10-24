@@ -94,7 +94,12 @@ export namespace Coworker {
     return out.sort((a, b) => a.name.localeCompare(b.name))
   }
 
-  export async function create(input: { name: string; duty?: string; id?: string }) {
+  export async function create(input: {
+    name: string
+    duty?: string
+    id?: string
+    bindings?: Partial<CoworkerBindings.Info>
+  }) {
     const name = input.name.trim()
     if (!name) throw new Error({ zh: "名称必填", en: "Name is required" })
     const id = input.id?.trim() || (await allocateId(name))
@@ -109,6 +114,7 @@ export namespace Coworker {
     }
     const duty = (input.duty ?? "").trim()
     await CoworkerSkeleton.create({ id, name, duty })
+    if (input.bindings) await CoworkerBindings.write(id, input.bindings)
     await CoworkerSync.sync(id)
     const info = await get(id)
     if (!info) throw new Error({ zh: "创建失败", en: "Create failed" })

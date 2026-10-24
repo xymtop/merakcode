@@ -1,4 +1,4 @@
-import type { CollaborationGroupSummary } from "@merakcode/sdk/client"
+import type { CollaborationGroupSummary, Coworker } from "@merakcode/sdk/client"
 import { createEffect, createSignal, on, Show } from "solid-js"
 import { locale, t } from "../../i18n"
 import { call, client } from "../../state/client"
@@ -28,6 +28,7 @@ export function GroupCreate(props: {
   const [seats, setSeats] = createSignal<Seat[]>([])
   const [products, setProducts] = createSignal<Product[]>([])
   const [groups, setGroups] = createSignal<CollaborationGroupSummary[]>([])
+  const [coworkers, setCoworkers] = createSignal<Coworker[]>([])
   const [copied, setCopied] = createSignal<{ from: string; skipped: string[] }>()
   const [busy, setBusy] = createSignal(false)
   let added = 0
@@ -42,9 +43,11 @@ export function GroupCreate(props: {
         setCopied(undefined)
         // Products may have changed since the last time: none are offered until they are checked again
         setProducts([])
+        setCoworkers([])
         const failed = (error: Error) => toast({ kind: "error", title: t("error.request", { message: error.message }) })
         void call(client(props.directory).collaboration.products()).then(setProducts).catch(failed)
         void call(client(props.directory).collaboration.list()).then(setGroups).catch(failed)
+        void call(client(props.directory).coworker.list()).then(setCoworkers).catch(failed)
       },
     ),
   )
@@ -68,7 +71,13 @@ export function GroupCreate(props: {
         client(props.directory).collaboration.create({
           title: title().trim() || undefined,
           leader: { name: leader.name, role: leader.role, duty: leader.duty },
-          seats: rest.map((seat) => ({ name: seat.name, role: seat.role, duty: seat.duty, product: seat.product })),
+          seats: rest.map((seat) => ({
+            name: seat.name,
+            role: seat.role,
+            duty: seat.duty,
+            product: seat.product,
+            coworkerID: seat.coworkerID,
+          })),
         }),
       )
       props.onCreated(created.sessionID)
@@ -134,6 +143,7 @@ export function GroupCreate(props: {
         <MemberList
           seats={seats()}
           products={products()}
+          coworkers={coworkers()}
           onSave={(seat, draft) =>
             setSeats((list) =>
               list.map((item) =>

@@ -23,8 +23,11 @@ export function Frame(props: {
   directory: string
   /** Project directory in the sidebar */
   folder: string
+  /** Review/code/browser and terminal are workspace tools; directory-shaped pages hide them */
+  tools?: boolean
   children: JSX.Element
 }) {
+  const tools = () => props.tools !== false
   return (
     <main class="main">
       <div class="topbar drag">
@@ -32,30 +35,32 @@ export function Frame(props: {
         <span class="spacer" />
         <div class="no-drag row">
           {props.actions}
-          <Tip label={t("topbar.terminal")} keys={`${mod} J`}>
-            <button
-              class="icon-button"
-              aria-label={t("topbar.terminal")}
-              aria-pressed={ui.terminal}
-              onClick={() => setUi("terminal", !ui.terminal)}
-            >
-              <SquareTerminal class="icon" />
-            </button>
-          </Tip>
-          <Tip label={t("topbar.panel")} keys={`${mod} B`}>
-            <button class="icon-button" aria-label={t("topbar.panel")} aria-pressed={ui.panel} onClick={togglePanel}>
-              <PanelRight class="icon" />
-            </button>
-          </Tip>
+          <Show when={tools()}>
+            <Tip label={t("topbar.terminal")} keys={`${mod} J`}>
+              <button
+                class="icon-button"
+                aria-label={t("topbar.terminal")}
+                aria-pressed={ui.terminal}
+                onClick={() => setUi("terminal", !ui.terminal)}
+              >
+                <SquareTerminal class="icon" />
+              </button>
+            </Tip>
+            <Tip label={t("topbar.panel")} keys={`${mod} B`}>
+              <button class="icon-button" aria-label={t("topbar.panel")} aria-pressed={ui.panel} onClick={togglePanel}>
+                <PanelRight class="icon" />
+              </button>
+            </Tip>
+          </Show>
         </div>
       </div>
       <div class="workspace">
         <section class="thread">{props.children}</section>
-        <Show when={ui.panel}>
+        <Show when={tools() && ui.panel}>
           <Panel sessionID={props.sessionID} directory={props.directory} folder={props.folder} />
         </Show>
       </div>
-      <Show when={ui.terminal}>
+      <Show when={tools() && ui.terminal}>
         <Terminal directory={props.directory} />
       </Show>
     </main>

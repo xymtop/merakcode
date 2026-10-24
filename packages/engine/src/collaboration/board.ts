@@ -13,6 +13,8 @@ export type Seat = {
   /** What the seat is for, in the user's words; it goes into the seat's prompt. May be empty */
   duty: string
   product: string
+  /** Saved coworker this seat represents. External CLI seats created before coworkers existed have none. */
+  coworkerID?: string
   leader: boolean
   privateSessionID?: string
 }
@@ -32,7 +34,7 @@ export type Group = {
   seq: number
 }
 
-export type SeatInput = { name: string; role?: string; duty?: string }
+export type SeatInput = { name: string; role?: string; duty?: string; coworkerID?: string }
 
 /** A refused change; the user reads text in their language, logs keep the English */
 export class GroupError extends Error {
@@ -84,6 +86,7 @@ export function updateSeat(group: Group, seatID: string, input: Partial<SeatInpu
   }
   if (input.role !== undefined) seat.role = input.role.trim()
   if (input.duty !== undefined) seat.duty = input.duty.trim()
+  if (input.coworkerID !== undefined) seat.coworkerID = input.coworkerID || undefined
   return nextGroup
 }
 
@@ -112,7 +115,12 @@ function assertName(name: string) {
 }
 
 function fields(input: SeatInput) {
-  return { name: input.name, role: input.role?.trim() ?? "", duty: input.duty?.trim() ?? "" }
+  return {
+    name: input.name,
+    role: input.role?.trim() ?? "",
+    duty: input.duty?.trim() ?? "",
+    ...(input.coworkerID ? { coworkerID: input.coworkerID } : {}),
+  }
 }
 
 /** Adds a seat to group in place */

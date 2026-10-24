@@ -259,6 +259,7 @@ function Reply(props: {
   sessionID: string
   directory: string
   onReviewFile: (file: string) => void
+  assistant?: { name: string }
 }) {
   const parts = () => partsOf(props.message.id)
   const list = createMemo(() => blocks(parts()))
@@ -287,11 +288,22 @@ function Reply(props: {
       }
     >
       <div class="assistant-turn">
-        <span class="message-avatar assistant-avatar" aria-hidden="true">
-          <img src="/logo.svg" alt="" />
-        </span>
+        <Show
+          when={props.assistant}
+          fallback={
+            <span class="message-avatar assistant-avatar" aria-hidden="true">
+              <img src="/logo.svg" alt="" />
+            </span>
+          }
+        >
+          {(assistant) => (
+            <span class="message-avatar assistant-avatar assistant-agent" aria-hidden="true">
+              {[...assistant().name.trim()][0]?.toUpperCase()}
+            </span>
+          )}
+        </Show>
         <div class="assistant-content">
-          <div class="assistant-name">{t("app.name")}</div>
+          <div class="assistant-name">{props.assistant?.name ?? t("app.name")}</div>
           <div class="assistant-body">
             <Blocks blocks={list()} done={done} directory={props.directory} onReviewFile={props.onReviewFile} />
             <ErrorCard message={props.message} />
@@ -641,6 +653,7 @@ export function Messages(props: {
   directory: string
   onReviewTurn: (messageID: string) => void
   onReviewFile: (file: string) => void
+  assistant?: { name: string }
   /** Shows the conversation as a group chat: the user on the right, the leader and each member on the left */
   group?: GroupView
 }) {
@@ -693,6 +706,7 @@ export function Messages(props: {
               sessionID={props.sessionID}
               directory={props.directory}
               onReviewFile={props.onReviewFile}
+              assistant={props.assistant}
             />
           )}
         </For>
@@ -715,6 +729,7 @@ export function Messages(props: {
                           sessionID={props.sessionID}
                           directory={props.directory}
                           onReviewFile={props.onReviewFile}
+                          assistant={props.assistant}
                         />
                       )}
                     </For>

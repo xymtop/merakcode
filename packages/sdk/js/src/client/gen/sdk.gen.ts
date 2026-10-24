@@ -2672,6 +2672,7 @@ export class Seat extends HeyApiClient {
       name: string
       role?: string
       duty?: string
+      coworkerID?: string
       product: string
     },
     options?: Options<never, ThrowOnError>,
@@ -2686,6 +2687,7 @@ export class Seat extends HeyApiClient {
             { in: "body", key: "name" },
             { in: "body", key: "role" },
             { in: "body", key: "duty" },
+            { in: "body", key: "coworkerID" },
             { in: "body", key: "product" },
           ],
         },
@@ -2754,6 +2756,7 @@ export class Seat extends HeyApiClient {
       name?: string
       role?: string
       duty?: string
+      coworkerID?: string
     },
     options?: Options<never, ThrowOnError>,
   ): RequestResult<CollaborationSeatUpdateResponses, CollaborationSeatUpdateErrors, ThrowOnError> {
@@ -2768,6 +2771,7 @@ export class Seat extends HeyApiClient {
             { in: "body", key: "name" },
             { in: "body", key: "role" },
             { in: "body", key: "duty" },
+            { in: "body", key: "coworkerID" },
           ],
         },
       ],
@@ -2862,6 +2866,10 @@ export class Collaboration extends HeyApiClient {
          * What the seat is for; it goes into the seat's prompt
          */
         duty?: string
+        /**
+         * Saved coworker this seat represents
+         */
+        coworkerID?: string
       }
       seats?: Array<{
         name: string
@@ -2873,6 +2881,10 @@ export class Collaboration extends HeyApiClient {
          * What the seat is for; it goes into the seat's prompt
          */
         duty?: string
+        /**
+         * Saved coworker this seat represents
+         */
+        coworkerID?: string
         product: string
       }>
     },
@@ -3326,6 +3338,11 @@ export class Coworker extends HeyApiClient {
       name: string
       duty?: string
       id?: string
+      bindings?: {
+        model?: string
+        skills?: Array<string>
+        mcp?: Array<string>
+      }
     },
     options?: Options<never, ThrowOnError>,
   ): RequestResult<CoworkerCreateResponses, CoworkerCreateErrors, ThrowOnError> {
@@ -3338,6 +3355,7 @@ export class Coworker extends HeyApiClient {
             { in: "body", key: "name" },
             { in: "body", key: "duty" },
             { in: "body", key: "id" },
+            { in: "body", key: "bindings" },
           ],
         },
       ],

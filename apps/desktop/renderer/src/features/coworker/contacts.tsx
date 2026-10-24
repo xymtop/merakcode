@@ -2,25 +2,49 @@ import type { Coworker } from "@merakcode/sdk/client"
 import BookUser from "lucide-solid/icons/book-user"
 import MessageSquare from "lucide-solid/icons/message-square"
 import Plus from "lucide-solid/icons/plus"
+import Search from "lucide-solid/icons/search"
 import Settings2 from "lucide-solid/icons/settings-2"
-import FolderTree from "lucide-solid/icons/folder-tree"
-import { createResource, createSignal, For, Show } from "solid-js"
+import { createMemo, createResource, createSignal, For, Show } from "solid-js"
 import { useNavigate } from "@solidjs/router"
-import { t } from "../../i18n"
+import { ago, t } from "../../i18n"
 import { coworkerChatPath, coworkerPath } from "../../lib/route"
 import { call, client } from "../../state/client"
+import { coworkerSessionsOf, folderOf, statusOf } from "../../state/store"
 import { toast } from "../../ui/toast"
+import { AgentAvatar } from "./avatar"
 import { CoworkerCreate } from "./create"
+import { AgentSettings } from "./settings"
 import { startCoworkerChat } from "./start-chat"
 
-export function Contacts(props: { directory: string; current?: string }) {
+function activityLabel(status: ReturnType<typeof statusOf>) {
+  if (status === "running") return t("status.running")
+  if (status === "approval") return t("status.approval")
+  if (status === "question") return t("status.question")
+  return t("coworker.contacts.none")
+}
+
+export function Contacts(props: { directory: string }) {
   const navigate = useNavigate()
+  const [query, setQuery] = createSignal("")
   const [creating, setCreating] = createSignal(false)
+  const [editing, setEditing] = createSignal<Coworker>()
   const [list, { refetch }] = createResource(
     () => props.directory,
     (directory) => call(client(directory).coworker.list()),
   )
-
+  const filtered = createMemo(() => {
+    const needle = query().trim().toLocaleLowerCase()
+    if (!needle) return list() ?? []
+    return (list() ?? []).filter((item) =>
+      `${item.name} ${item.duty} ${item.bindings.skills.join(" ")} ${item.bindings.mcp.join(" ")}`
+        .toLocaleLowerCase()
+        .includes(needle),
+    )
+  })
+  const latest = (id: string) => {
+    const folder = folderOf(props.directory)
+    return folder ? coworkerSessionsOf(folder, id)[0] : undefined
+  }
   const chat = async (item: Coworker) => {
     try {
       const session = await startCoworkerChat(props.directory, item.id, item.name)
@@ -31,56 +55,99 @@ export function Contacts(props: { directory: string; current?: string }) {
   }
 
   return (
-    <div class="coworker-contacts">
-      <div class="coworker-contacts-head">
-        <div class="sessions-title">
-          <BookUser class="icon icon-sm" />
-          <span>{t("coworker.contacts")}</span>
+    <div class="contacts-page scroll">
+      <header class="contacts-page-head">
+        <div class="contacts-heading">
+          <span class="page-kicker">{t("coworker.contacts.kicker")}</span>
+          <h1>{t("coworker.nav")}</h1>
+          <p>{t("coworker.contacts.lead")}</p>
         </div>
-        <button class="button ghost sm" onClick={() => setCreating(true)} title={t("coworker.create.title")}>
-          <Plus class="icon icon-sm" />
-        </button>
+        <div class="contacts-tools">
+          <label class="page-search">
+            <Search class="icon" />
+            <input
+              value={query()}
+              aria-label={t("coworker.contacts.search")}
+              placeholder={t("coworker.contacts.search")}
+              onInput={(event) => setQuery(event.currentTarget.value)}
+            />
+          </label>
+          <button class="button primary" onClick={() => setCreating(true)}>
+            <Plus class="icon" />
+            {t("coworker.create.title")}
+          </button>
+        </div>
+      </header>
+
+      <div class="contacts-summary">
+        <span>{t("coworker.contacts.summary", { count: filtered().length })}</span>
+        <span>{t("coworker.contacts.current")}</span>
       </div>
-      <div class="sessions-scroll scroll">
+
+      <section class="agent-table" aria-label={t("coworker.nav")}>
+        <div class="agent-table-head" aria-hidden="true">
+          <span>Agent</span>
+          <span>{t("coworker.contacts.current")}</span>
+          <span>{t("coworker.bindings.skills")}</span>
+          <span>{t("coworker.bindings.mcp")}</span>
+          <span />
+        </div>
         <For
-          each={list() ?? []}
+          each={filtered()}
           fallback={
-            <div class="sessions-empty subtle">
-              {list.loading ? t("coworker.loading") : t("coworker.contacts.empty")}
+            <div class="agent-table-empty">
+              <BookUser class="icon" />
+              <span>{list.loading ? t("coworker.loading") : t("coworker.contacts.empty")}</span>
             </div>
           }
         >
-          {(item) => (
-            <div class="coworker-card" data-active={props.current === item.id ? "true" : undefined}>
-              <button class="coworker-card-main" onClick={() => navigate(coworkerPath(props.directory, item.id))}>
-                <span class="coworker-card-name ellipsis">{item.name}</span>
-                <Show when={item.duty}>
-                  <span class="coworker-card-duty ellipsis subtle">{item.duty}</span>
-                </Show>
-              </button>
-              <div class="coworker-card-actions">
-                <button class="button ghost sm" title={t("coworker.chat")} onClick={() => void chat(item)}>
-                  <MessageSquare class="icon icon-sm" />
+          {(item) => {
+            const session = () => latest(item.id)
+            return (
+              <article class="agent-table-row">
+                <button class="agent-profile" onClick={() => navigate(coworkerPath(props.directory, item.id))}>
+                  <AgentAvatar id={item.id} name={item.name} size="lg" />
+                  <span class="agent-profile-copy">
+                    <strong>{item.name}</strong>
+                    <span>{item.duty || t("coworker.contacts.none")}</span>
+                  </span>
                 </button>
-                <button
-                  class="button ghost sm"
-                  title={t("coworker.world")}
-                  onClick={() => navigate(coworkerPath(props.directory, item.id, "world"))}
-                >
-                  <FolderTree class="icon icon-sm" />
+                <button class="agent-work" disabled={!session()} onClick={() => session() && void chat(item)}>
+                  <span>{session()?.title ?? t("coworker.contacts.none")}</span>
+                  <small>
+                    <span class="status-dot" data-active={statusOf(session()?.id ?? "") !== "idle" ? "" : undefined} />
+                    {activityLabel(statusOf(session()?.id ?? ""))}
+                    <Show when={session()?.time.updated}>{(time) => <span> · {ago(time())}</span>}</Show>
+                  </small>
                 </button>
-                <button
-                  class="button ghost sm"
-                  title={t("coworker.bindings")}
-                  onClick={() => navigate(coworkerPath(props.directory, item.id, "bindings"))}
-                >
-                  <Settings2 class="icon icon-sm" />
-                </button>
-              </div>
-            </div>
-          )}
+                <div class="agent-capabilities">
+                  <span>{item.bindings.skills.length}</span>
+                  <small>{item.bindings.skills.slice(0, 2).join(" · ") || "—"}</small>
+                </div>
+                <div class="agent-capabilities">
+                  <span>{item.bindings.mcp.length}</span>
+                  <small>{item.bindings.mcp.slice(0, 2).join(" · ") || "—"}</small>
+                </div>
+                <div class="agent-actions">
+                  <button class="button secondary sm" onClick={() => setEditing(item)}>
+                    <Settings2 class="icon icon-sm" />
+                    {t("sidebar.settings")}
+                  </button>
+                  <button class="button secondary sm" onClick={() => navigate(coworkerPath(props.directory, item.id))}>
+                    <BookUser class="icon icon-sm" />
+                    {t("coworker.contacts.profile")}
+                  </button>
+                  <button class="button primary sm" onClick={() => void chat(item)}>
+                    <MessageSquare class="icon icon-sm" />
+                    {t("coworker.chat")}
+                  </button>
+                </div>
+              </article>
+            )
+          }}
         </For>
-      </div>
+      </section>
+
       <CoworkerCreate
         directory={props.directory}
         open={creating()}
@@ -90,6 +157,17 @@ export function Contacts(props: { directory: string; current?: string }) {
           navigate(coworkerPath(props.directory, id))
         }}
       />
+      <Show when={editing()}>
+        {(item) => (
+          <AgentSettings
+            directory={props.directory}
+            coworkerID={item().id}
+            initial={item()}
+            onClose={() => setEditing(undefined)}
+            onSaved={() => void refetch()}
+          />
+        )}
+      </Show>
     </div>
   )
 }

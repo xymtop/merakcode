@@ -3551,6 +3551,7 @@ export type CollaborationGroupSummary = {
     role: string
     duty: string
     product: string
+    coworkerID?: string
     leader: boolean
   }>
 }
@@ -3561,6 +3562,7 @@ export type CollaborationSeat = {
   role: string
   duty: string
   product: string
+  coworkerID?: string
   leader: boolean
   privateSessionID?: string
 }
@@ -6514,6 +6516,10 @@ export type CollaborationCreateData = {
        * What the seat is for; it goes into the seat's prompt
        */
       duty?: string
+      /**
+       * Saved coworker this seat represents
+       */
+      coworkerID?: string
     }
     seats?: Array<{
       name: string
@@ -6525,6 +6531,10 @@ export type CollaborationCreateData = {
        * What the seat is for; it goes into the seat's prompt
        */
       duty?: string
+      /**
+       * Saved coworker this seat represents
+       */
+      coworkerID?: string
       product: string
     }>
   }
@@ -6604,6 +6614,10 @@ export type CollaborationSeatAddData = {
      * What the seat is for; it goes into the seat's prompt
      */
     duty?: string
+    /**
+     * Saved coworker this seat represents
+     */
+    coworkerID?: string
     product: string
   }
   path: {
@@ -6682,6 +6696,10 @@ export type CollaborationSeatUpdateData = {
      * What the seat is for; it goes into the seat's prompt
      */
     duty?: string
+    /**
+     * Saved coworker this seat represents
+     */
+    coworkerID?: string
   }
   path: {
     sessionID: string
@@ -6751,6 +6769,11 @@ export type CoworkerCreateData = {
     name: string
     duty?: string
     id?: string
+    bindings?: {
+      model?: string
+      skills?: Array<string>
+      mcp?: Array<string>
+    }
   }
   path?: never
   query?: {

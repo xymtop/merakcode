@@ -55,6 +55,23 @@ test("bindings select skills and mcp into agent permission", async () => {
   })
 })
 
+test("a coworker can be created with its runtime configuration in one step", async () => {
+  await using tmp = await tmpdir()
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const created = await Coworker.create({
+        name: "Release",
+        duty: "Ship safely",
+        bindings: { model: "test/model", skills: ["deploy"], mcp: ["github"] },
+      })
+      expect(created.bindings).toEqual({ model: "test/model", skills: ["deploy"], mcp: ["github"] })
+      const agent = await Agent.get(created.id)
+      expect(agent?.model).toEqual({ providerID: "test", modelID: "model" })
+    },
+  })
+})
+
 test("world file CRUD and search", async () => {
   await using tmp = await tmpdir()
   await Instance.provide({

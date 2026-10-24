@@ -97,7 +97,7 @@ test("groups of every project can be listed to copy, newest first, without anyon
       const first = await post(app, a.path, {
         title: "登录小组",
         leader: { name: "小主", duty: "带队" },
-        seats: [{ name: "小红", role: "产品经理", duty: "写需求", product: "node" }],
+        seats: [{ name: "小红", role: "产品经理", duty: "写需求", product: "node", coworkerID: "linche" }],
       })
       const group = first.body.group as { seats: { id: string; leader: boolean }[] }
       await remember(first.body.sessionID as string, group.seats.find((seat) => !seat.leader)!.id, "private-1")
@@ -127,7 +127,14 @@ test("groups of every project can be listed to copy, newest first, without anyon
           directory: a.path,
           seats: [
             { name: "小主", role: "", duty: "带队", product: "merak", leader: true },
-            { name: "小红", role: "产品经理", duty: "写需求", product: "node", leader: false },
+            {
+              name: "小红",
+              role: "产品经理",
+              duty: "写需求",
+              product: "node",
+              coworkerID: "linche",
+              leader: false,
+            },
           ],
         },
       ])

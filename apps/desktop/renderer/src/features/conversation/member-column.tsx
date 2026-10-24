@@ -1,4 +1,4 @@
-import type { CollaborationGroup } from "@merakcode/sdk/client"
+import type { CollaborationGroup, Coworker } from "@merakcode/sdk/client"
 import ChevronsLeft from "lucide-solid/icons/chevrons-left"
 import ChevronsRight from "lucide-solid/icons/chevrons-right"
 import Plus from "lucide-solid/icons/plus"
@@ -15,6 +15,7 @@ export function MemberColumn(props: {
   directory: string
   group: CollaborationGroup
   products: readonly Product[]
+  coworkers?: readonly Coworker[]
   busy: (seatID: string) => boolean
   collapsed: boolean
   onCollapsed: (collapsed: boolean) => void
@@ -77,6 +78,7 @@ export function MemberColumn(props: {
           <MemberList
             seats={props.group.seats}
             products={props.products}
+            coworkers={props.coworkers}
             busy={props.busy}
             open={props.open}
             onSave={(seat, draft) =>

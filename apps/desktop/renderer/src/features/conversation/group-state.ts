@@ -1,4 +1,4 @@
-import type { CollaborationGroup, Todo } from "@merakcode/sdk/client"
+import type { CollaborationGroup, Coworker, Todo } from "@merakcode/sdk/client"
 import { createEffect, createSignal, on, onCleanup } from "solid-js"
 import { call, client } from "../../state/client"
 import { listen } from "../../state/store"
@@ -8,6 +8,7 @@ import type { Product } from "./members"
 export function groupState(input: { sessionID: () => string; directory: () => string; enabled: () => boolean }) {
   const [group, setGroup] = createSignal<CollaborationGroup>()
   const [products, setProducts] = createSignal<Product[]>([])
+  const [coworkers, setCoworkers] = createSignal<Coworker[]>([])
   const [todos, setTodos] = createSignal<Todo[]>([])
   const api = () => client(input.directory())
   const refresh = () =>
@@ -18,6 +19,10 @@ export function groupState(input: { sessionID: () => string; directory: () => st
     call(api().collaboration.products())
       .then(setProducts)
       .catch(() => undefined)
+  const refreshCoworkers = () =>
+    call(api().coworker.list())
+      .then(setCoworkers)
+      .catch(() => undefined)
 
   createEffect(
     on([input.sessionID, input.enabled], ([sessionID, enabled]) => {
@@ -26,6 +31,7 @@ export function groupState(input: { sessionID: () => string; directory: () => st
       if (!enabled) return
       void refresh()
       void refreshProducts()
+      void refreshCoworkers()
       void call(api().session.todo({ sessionID }))
         .then(setTodos)
         .catch(() => undefined)
@@ -41,5 +47,5 @@ export function groupState(input: { sessionID: () => string; directory: () => st
         setTodos(event.properties.todos)
     }),
   )
-  return { group, products, todos }
+  return { group, products, coworkers, todos }
 }

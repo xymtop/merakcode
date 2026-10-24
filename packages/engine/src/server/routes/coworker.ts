@@ -65,6 +65,13 @@ export const CoworkerRoutes = lazy(() =>
           name: z.string(),
           duty: z.string().optional(),
           id: z.string().optional(),
+          bindings: z
+            .object({
+              model: z.string().optional(),
+              skills: z.array(z.string()).optional(),
+              mcp: z.array(z.string()).optional(),
+            })
+            .optional(),
         }),
       ),
       async (c) => {

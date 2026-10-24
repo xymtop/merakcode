@@ -10,14 +10,25 @@ import Users from "lucide-solid/icons/users"
 import BookUser from "lucide-solid/icons/book-user"
 import Search from "lucide-solid/icons/search"
 import Settings from "lucide-solid/icons/settings"
+import SquarePen from "lucide-solid/icons/square-pen"
 import ArrowUpCircle from "lucide-solid/icons/circle-arrow-up"
 import { createSignal, For, Match, onCleanup, onMount, Show, Switch } from "solid-js"
 import { A, useNavigate } from "@solidjs/router"
 import { ago, t } from "../../i18n"
-import { bridge, mac } from "../../lib/bridge"
-import { baseName, coworkerPath, sameDir, sessionPath } from "../../lib/route"
+import { bridge } from "../../lib/bridge"
+import { coworkerIdOf, isCoworkerSession } from "../../lib/coworker"
+import { baseName, coworkerChatPath, coworkerPath, sameDir, sessionPath } from "../../lib/route"
 import { call, client } from "../../state/client"
-import { closeFolder, listen, loadMore, openFolder, sessionsOf, state, statusOf, type Folder } from "../../state/store"
+import {
+  allSessionsOf,
+  closeFolder,
+  listen,
+  loadMore,
+  openFolder,
+  state,
+  statusOf,
+  type Folder,
+} from "../../state/store"
 import { setUi, ui } from "../../state/ui"
 import { updateState } from "../update/state"
 import { Confirm } from "../../ui/dialog"
@@ -25,8 +36,6 @@ import { Menu } from "../../ui/menu"
 import { toast } from "../../ui/toast"
 import { Rename } from "./rename"
 import { GroupCreate } from "../conversation/group-create"
-
-const mod = mac ? "⌘" : "Ctrl"
 
 /** Picks a folder and opens it as a project */
 export async function pickFolder(navigate: (path: string) => void) {
@@ -82,6 +91,10 @@ function tone(id: string) {
   return ["blue", "green", "purple", "orange"][Math.abs(hash) % 4]
 }
 
+function initials(title?: string) {
+  return [...(title?.replace(/^[^\p{L}\p{N}]+/u, "").trim() ?? "")][0]?.toUpperCase() ?? ""
+}
+
 function Conversation(props: { session: Session; folder: Folder; current?: string }) {
   const navigate = useNavigate()
   const [deleting, setDeleting] = createSignal(false)
@@ -95,6 +108,12 @@ function Conversation(props: { session: Session; folder: Folder; current?: strin
       status()
     ]
   const c = () => client(props.session.directory)
+  const href = () => {
+    const coworkerID = coworkerIdOf(props.session)
+    if (isCoworkerSession(props.session) && coworkerID)
+      return coworkerChatPath(props.folder.directory, coworkerID, props.session.id)
+    return sessionPath(props.folder.directory, props.session.id)
+  }
   const remove = async () => {
     setDeleting(false)
     await call(c().session.delete({ sessionID: props.session.id })).catch((error: Error) =>
@@ -104,18 +123,21 @@ function Conversation(props: { session: Session; folder: Folder; current?: strin
   }
   return (
     <div class="conversation-row">
-      <A
-        href={sessionPath(props.folder.directory, props.session.id)}
-        class="conversation"
-        aria-current={props.current === props.session.id ? "page" : undefined}
-      >
+      <A href={href()} class="conversation" aria-current={props.current === props.session.id ? "page" : undefined}>
         <span
           class="conversation-avatar"
           data-group={props.session.metadata?.group === true ? "" : undefined}
           data-tone={tone(props.session.id)}
           aria-hidden="true"
         >
-          <Show when={props.session.metadata?.group === true} fallback={<MessageSquare class="icon" />}>
+          <Show
+            when={props.session.metadata?.group === true}
+            fallback={
+              <span class="conversation-initial">
+                {initials(props.session.title) || <MessageSquare class="icon icon-sm" />}
+              </span>
+            }
+          >
             <Users class="icon" />
           </Show>
           <Show when={status() !== "idle"}>
@@ -135,6 +157,9 @@ function Conversation(props: { session: Session; folder: Folder; current?: strin
             </Show>
           </span>
           <span class="meta">
+            <Show when={isCoworkerSession(props.session)}>
+              <span class="agent-label">{t("coworker.agent")}</span>
+            </Show>
             <Show when={label()}>
               <span class="state" data-state={status()}>
                 {label()}
@@ -174,10 +199,15 @@ function Conversation(props: { session: Session; folder: Folder; current?: strin
   )
 }
 
-function Group(props: { folder: Folder; current?: string; route?: string }) {
+function Group(props: { folder: Folder; current?: string; route?: string; query?: string }) {
   const navigate = useNavigate()
   const name = () => baseName(props.folder.directory)
-  const list = () => sessionsOf(props.folder)
+  const list = () => {
+    const query = props.query?.trim().toLocaleLowerCase()
+    return allSessionsOf(props.folder).filter(
+      (session) => !query || (session.title || t("sidebar.untitled")).toLocaleLowerCase().includes(query),
+    )
+  }
   const remove = () => {
     const directory = props.folder.directory
     const openHere = props.route !== undefined && sameDir(props.route, directory)
@@ -231,18 +261,67 @@ function Group(props: { folder: Folder; current?: string; route?: string }) {
 }
 
 function SessionList(props: { directory?: string; current?: string }) {
-  const count = () => state.folders.reduce((total, folder) => total + sessionsOf(folder).length, 0)
+  const navigate = useNavigate()
+  const [query, setQuery] = createSignal("")
+  const count = () => state.folders.reduce((total, folder) => total + allSessionsOf(folder).length, 0)
+  const folders = () => {
+    const needle = query().trim().toLocaleLowerCase()
+    if (!needle) return state.folders
+    return state.folders.filter(
+      (folder) =>
+        baseName(folder.directory).toLocaleLowerCase().includes(needle) ||
+        allSessionsOf(folder).some((session) =>
+          (session.title || t("sidebar.untitled")).toLocaleLowerCase().includes(needle),
+        ),
+    )
+  }
   return (
     <div class="sessions-pane">
       <div class="sessions-head drag">
-        <div class="sessions-title">
-          <span>{t("sidebar.messages")}</span>
-          <span class="sessions-count">{count()}</span>
+        <div class="sessions-heading">
+          <div class="sessions-title">
+            <span>{t("sidebar.messages")}</span>
+            <span class="sessions-count">{count()}</span>
+          </div>
+          <span class="sessions-subtitle">{t("sidebar.summary", { count: count() })}</span>
         </div>
+        <Menu
+          class="icon-button drag-none"
+          label={t("sidebar.new")}
+          trigger={<SquarePen class="icon" />}
+          items={[
+            {
+              label: t("sidebar.new"),
+              icon: Plus,
+              disabled: !props.directory,
+              onSelect: () => props.directory && navigate(sessionPath(props.directory)),
+            },
+            {
+              label: t("sidebar.group"),
+              icon: Users,
+              disabled: !props.directory,
+              onSelect: () => setUi("newTeam", true),
+            },
+            {
+              label: t("sidebar.openWorkspace"),
+              icon: FolderOpen,
+              onSelect: () => void pickFolder(navigate),
+            },
+          ]}
+        />
       </div>
+      <label class="session-search">
+        <Search class="icon icon-sm" />
+        <input
+          value={query()}
+          aria-label={t("sidebar.search")}
+          placeholder={t("sidebar.searchConversations")}
+          onInput={(event) => setQuery(event.currentTarget.value)}
+        />
+      </label>
       <div class="sessions-scroll scroll">
-        <For each={state.folders} fallback={<div class="sessions-empty subtle">{t("sidebar.empty")}</div>}>
-          {(folder) => <Group folder={folder} current={props.current} route={props.directory} />}
+        <For each={folders()} fallback={<div class="sessions-empty subtle">{t("sidebar.empty")}</div>}>
+          {(folder) => <Group folder={folder} current={props.current} route={props.directory} query={query()} />}
         </For>
       </div>
       <UpdateNotice />
@@ -281,29 +360,12 @@ export function PrimaryNav(props: {
   const navigate = useNavigate()
   const directory = () => props.directory ?? state.folders[0]?.directory
   const leave = () => props.close?.()
-  const newConversation = () => {
-    leave()
-    const dir = directory()
-    if (dir) navigate(sessionPath(dir))
-    else void pickFolder(navigate)
-  }
   return (
     <div class="primary-nav">
-      <div class="primary-brand drag">
+      <div class="primary-brand drag" title={t("app.name")}>
         <img src="/logo.svg" alt="" />
         <span>{t("app.name")}</span>
       </div>
-      <button
-        class="primary-search"
-        onClick={() => {
-          leave()
-          setUi("palette", true)
-        }}
-      >
-        <Search class="icon icon-sm" />
-        <span>{t("sidebar.search")}</span>
-        <kbd aria-hidden="true">{mod} K</kbd>
-      </button>
       <div class="primary-links">
         <button
           class="primary-link"
@@ -316,9 +378,6 @@ export function PrimaryNav(props: {
         >
           <MessageSquare class="icon" />
           <span>{t("sidebar.messages")}</span>
-          <span class="primary-count">
-            {state.folders.reduce((count, folder) => count + sessionsOf(folder).length, 0)}
-          </span>
         </button>
         <button
           class="primary-link"
@@ -331,22 +390,6 @@ export function PrimaryNav(props: {
         >
           <BookUser class="icon" />
           <span>{t("coworker.nav")}</span>
-        </button>
-        <button class="primary-link" onClick={newConversation}>
-          <Plus class="icon" />
-          <span>{t("sidebar.new")}</span>
-        </button>
-        <button
-          class="primary-link"
-          disabled={!directory()}
-          onClick={() => {
-            leave()
-            setUi("newTeam", true)
-          }}
-        >
-          <Users class="icon" />
-          <span>{t("sidebar.group")}</span>
-          <span class="sr-only">Ctrl G</span>
         </button>
       </div>
       <span class="spacer" />

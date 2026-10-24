@@ -8,6 +8,7 @@ import { Todo } from "../session/todo"
 import { Session } from "../session"
 import { Message } from "../session/message"
 import { Agent } from "../agent/agent"
+import { Coworker } from "../coworker/coworker"
 import { SessionRunner } from "../session/runner"
 import type { Group, Seat } from "../collaboration/board"
 import { changedFiles, withOwners } from "../collaboration/artifacts"
@@ -202,8 +203,18 @@ async function runMerak(
   const session = child ?? (await Session.create({ parentID: ctx.sessionID, title: seat.name }))
   const parent = await Message.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
   if (parent.info.role !== "assistant") throw new Error("Not an assistant message")
-  const agent = (await Agent.get("build")) ?? (await Agent.get(parent.info.agent))
+  const coworker = seat.coworkerID ? await Coworker.get(seat.coworkerID) : undefined
+  const agent =
+    (coworker ? await Agent.get(coworker.id) : undefined) ??
+    (await Agent.get("build")) ??
+    (await Agent.get(parent.info.agent))
   if (!agent) throw new Error("No agent is available for a Merak seat")
+  const configured = coworker?.bindings.model
+  const at = configured?.indexOf("/") ?? -1
+  const model =
+    configured && at > 0
+      ? { providerID: configured.slice(0, at), modelID: configured.slice(at + 1) }
+      : { providerID: parent.info.providerID, modelID: parent.info.modelID }
   started(session.id)
   const cancel = () => SessionRunner.cancel(session.id)
   ctx.abort.addEventListener("abort", cancel)
@@ -212,7 +223,7 @@ async function runMerak(
   const result = await SessionRunner.prompt({
     sessionID: session.id,
     messageID: Identifier.ascending("message"),
-    model: { modelID: parent.info.modelID, providerID: parent.info.providerID },
+    model,
     agent: agent.id,
     parts,
   })

@@ -1,7 +1,10 @@
 import type { CoworkerWorldNode } from "@merakcode/sdk/client"
 import ChevronRight from "lucide-solid/icons/chevron-right"
+import FileText from "lucide-solid/icons/file-text"
 import FilePlus from "lucide-solid/icons/file-plus"
+import Folder from "lucide-solid/icons/folder"
 import FolderPlus from "lucide-solid/icons/folder-plus"
+import Pencil from "lucide-solid/icons/pencil"
 import Search from "lucide-solid/icons/search"
 import Trash2 from "lucide-solid/icons/trash"
 import { createEffect, createResource, createSignal, For, Show } from "solid-js"
@@ -9,8 +12,19 @@ import { t } from "../../i18n"
 import { call, client } from "../../state/client"
 import { Confirm } from "../../ui/dialog"
 import { toast } from "../../ui/toast"
+import { Markdown } from "../../ui/markdown"
 
 const SLOT_ROOTS = new Set(["01-duty", "02-rules", "03-memory", "04-facts", "05-decisions"])
+
+function nodeName(node: CoworkerWorldNode) {
+  const root = node.relative.split("/")[0]
+  if (root === "01-duty") return node.relative === root ? t("coworker.world.duty") : node.name
+  if (root === "02-rules") return node.relative === root ? t("coworker.world.rules") : node.name
+  if (root === "03-memory") return node.relative === root ? t("coworker.world.memory") : node.name
+  if (root === "04-facts") return node.relative === root ? t("coworker.world.facts") : node.name
+  if (root === "05-decisions") return node.relative === root ? t("coworker.world.decisions") : node.name
+  return node.name
+}
 
 function TreeNode(props: {
   node: CoworkerWorldNode
@@ -33,8 +47,12 @@ function TreeNode(props: {
       >
         <Show when={props.node.type === "directory"}>
           <ChevronRight class="icon icon-sm" style={{ transform: open() ? "rotate(90deg)" : undefined }} />
+          <Folder class="icon icon-sm tree-file-icon" />
         </Show>
-        <span class="ellipsis">{props.node.name}</span>
+        <Show when={props.node.type === "file"}>
+          <FileText class="icon icon-sm tree-file-icon" />
+        </Show>
+        <span class="ellipsis">{nodeName(props.node)}</span>
       </button>
       <Show when={props.node.type === "directory" && open()}>
         <For each={props.node.children ?? []}>
@@ -49,6 +67,8 @@ export function WorldEditor(props: { directory: string; coworkerID: string }) {
   const c = () => client(props.directory).coworker
   const [selected, setSelected] = createSignal<string>()
   const [content, setContent] = createSignal("")
+  const [saved, setSaved] = createSignal("")
+  const [editing, setEditing] = createSignal(false)
   const [dirty, setDirty] = createSignal(false)
   const [query, setQuery] = createSignal("")
   const [removing, setRemoving] = createSignal<string>()
@@ -70,7 +90,9 @@ export function WorldEditor(props: { directory: string; coworkerID: string }) {
       const file = await call(c().world.read({ coworkerID: props.coworkerID, path: relative }))
       setSelected(relative)
       setContent(file.content)
+      setSaved(file.content)
       setDirty(false)
+      setEditing(false)
     } catch (error) {
       toast({ kind: "error", title: t("error.request", { message: (error as Error).message }) })
     }
@@ -80,7 +102,9 @@ export function WorldEditor(props: { directory: string; coworkerID: string }) {
     props.coworkerID
     setSelected(undefined)
     setContent("")
+    setSaved("")
     setDirty(false)
+    setEditing(false)
     setQuery("")
   })
 
@@ -90,6 +114,8 @@ export function WorldEditor(props: { directory: string; coworkerID: string }) {
     try {
       await call(c().world.write({ coworkerID: props.coworkerID, path, content: content() }))
       setDirty(false)
+      setSaved(content())
+      setEditing(false)
       toast({ kind: "success", title: t("coworker.world.saved") })
       void refetchTree()
     } catch (error) {
@@ -154,6 +180,10 @@ export function WorldEditor(props: { directory: string; coworkerID: string }) {
   return (
     <div class="coworker-world">
       <aside class="coworker-world-side">
+        <div class="coworker-pane-head">
+          <strong>{t("coworker.world")}</strong>
+          <span>{t("coworker.world.intro")}</span>
+        </div>
         <div class="coworker-world-toolbar">
           <label class="coworker-search">
             <Search class="icon icon-sm" />
@@ -204,19 +234,47 @@ export function WorldEditor(props: { directory: string; coworkerID: string }) {
       <div class="coworker-world-editor">
         <Show when={selected()} fallback={<div class="coworker-world-empty subtle">{t("coworker.world.pick")}</div>}>
           <div class="coworker-world-editor-head">
-            <span class="ellipsis">{selected()}</span>
-            <button class="button primary sm" disabled={!dirty()} onClick={() => void save()}>
-              {t("common.save")}
-            </button>
+            <span class="coworker-breadcrumb ellipsis">{selected()}</span>
+            <span class="spacer" />
+            <Show when={!editing()}>
+              <button class="button secondary sm" onClick={() => setEditing(true)}>
+                <Pencil class="icon icon-sm" />
+                {t("coworker.world.edit")}
+              </button>
+            </Show>
+            <Show when={editing()}>
+              <button
+                class="button secondary sm"
+                onClick={() => {
+                  setContent(saved())
+                  setDirty(false)
+                  setEditing(false)
+                }}
+              >
+                {t("common.cancel")}
+              </button>
+              <button class="button primary sm" disabled={!dirty()} onClick={() => void save()}>
+                {t("common.save")}
+              </button>
+            </Show>
           </div>
-          <textarea
-            class="coworker-world-textarea"
-            value={content()}
-            onInput={(e) => {
-              setContent(e.currentTarget.value)
-              setDirty(true)
-            }}
-          />
+          <Show
+            when={editing()}
+            fallback={
+              <article class="coworker-world-document markdown selectable">
+                <Markdown text={content()} />
+              </article>
+            }
+          >
+            <textarea
+              class="coworker-world-textarea"
+              value={content()}
+              onInput={(e) => {
+                setContent(e.currentTarget.value)
+                setDirty(true)
+              }}
+            />
+          </Show>
         </Show>
       </div>
       <Confirm

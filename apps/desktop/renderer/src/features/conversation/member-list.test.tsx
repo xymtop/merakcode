@@ -1,3 +1,4 @@
+import type { Coworker } from "@merakcode/sdk/client"
 import { type JSX } from "solid-js"
 import { render } from "solid-js/web"
 import { afterEach, beforeEach, expect, test } from "vitest"
@@ -32,6 +33,16 @@ const seats: Seat[] = [
 const products: Product[] = [
   { id: "merak", title: "MerakCode", connected: true, enabled: true, builtin: true, source: "builtin" },
   { id: "claude", title: "Claude Code", connected: true, enabled: true, builtin: true, source: "builtin" },
+]
+const coworkers: Coworker[] = [
+  {
+    id: "linche",
+    name: "林澈",
+    duty: "负责客户端发布",
+    profilePath: "/project/.merakcode/coworkers/linche/PROFILE.md",
+    worldPath: "/project/.merakcode/coworkers/linche/world",
+    bindings: { skills: [], mcp: [] },
+  },
 ]
 
 const button = (host: HTMLElement, name: string) =>
@@ -215,4 +226,39 @@ test("an older CLI is still offered, with its version and a hint to upgrade", ()
   )
   ;(codex as HTMLElement).click()
   expect(host.textContent).toContain("当前 codex-cli 0.77.0，建议升级到 0.164.0 及以上以保证正常运行（codex update）")
+})
+
+test("agent group members are selected from existing coworkers and keep the coworker link", () => {
+  const added: SeatDraft[] = []
+  const host = mount(() => (
+    <MemberList
+      seats={seats}
+      products={products}
+      coworkers={coworkers}
+      onSave={() => undefined}
+      onAdd={(draft) => added.push(draft)}
+      onRemove={() => undefined}
+    />
+  ))
+  button(host, "添加成员")!.click()
+  expect(host.textContent).toContain("选择已有智能体")
+  expect([...host.querySelectorAll(".member-form .member-label")].map((item) => item.textContent)).not.toContain("产品")
+  host
+    .querySelector("button[aria-haspopup]")!
+    .dispatchEvent(new PointerEvent("pointerdown", { button: 0, bubbles: true, pointerType: "mouse" }))
+  const option = [...document.querySelectorAll("[role=option]")].find((item) => item.textContent?.includes("林澈"))!
+  ;(option as HTMLElement).dispatchEvent(
+    new PointerEvent("pointerup", { button: 0, bubbles: true, pointerType: "mouse" }),
+  )
+  ;(option as HTMLElement).click()
+  button(host, "加入")!.click()
+  expect(added).toEqual([
+    {
+      name: "林澈",
+      role: "",
+      duty: "负责客户端发布",
+      product: "merak",
+      coworkerID: "linche",
+    },
+  ])
 })

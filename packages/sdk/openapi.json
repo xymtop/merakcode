@@ -9117,6 +9117,9 @@
                 "product": {
                   "type": "string"
                 },
+                "coworkerID": {
+                  "type": "string"
+                },
                 "leader": {
                   "type": "boolean"
                 }
@@ -9145,6 +9148,9 @@
             "type": "string"
           },
           "product": {
+            "type": "string"
+          },
+          "coworkerID": {
             "type": "string"
           },
           "leader": {
@@ -15826,6 +15832,10 @@
                       "duty": {
                         "description": "What the seat is for; it goes into the seat's prompt",
                         "type": "string"
+                      },
+                      "coworkerID": {
+                        "description": "Saved coworker this seat represents",
+                        "type": "string"
                       }
                     },
                     "required": ["name"]
@@ -15844,6 +15854,10 @@
                         },
                         "duty": {
                           "description": "What the seat is for; it goes into the seat's prompt",
+                          "type": "string"
+                        },
+                        "coworkerID": {
+                          "description": "Saved coworker this seat represents",
                           "type": "string"
                         },
                         "product": {
@@ -16003,6 +16017,10 @@
                     "description": "What the seat is for; it goes into the seat's prompt",
                     "type": "string"
                   },
+                  "coworkerID": {
+                    "description": "Saved coworker this seat represents",
+                    "type": "string"
+                  },
                   "product": {
                     "type": "string"
                   }
@@ -16098,6 +16116,10 @@
                   },
                   "duty": {
                     "description": "What the seat is for; it goes into the seat's prompt",
+                    "type": "string"
+                  },
+                  "coworkerID": {
+                    "description": "Saved coworker this seat represents",
                     "type": "string"
                   }
                 }
@@ -16291,6 +16313,26 @@
                   },
                   "id": {
                     "type": "string"
+                  },
+                  "bindings": {
+                    "type": "object",
+                    "properties": {
+                      "model": {
+                        "type": "string"
+                      },
+                      "skills": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "mcp": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    }
                   }
                 },
                 "required": ["name"]

@@ -150,15 +150,15 @@ pre,
   background: var(--accent);
   color: var(--text-inverse);
   border-color: var(--accent);
-  box-shadow: 0 1px 2px color-mix(in srgb, var(--accent) 24%, transparent);
+  box-shadow: 0 2px 5px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 .button.primary:hover {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
 }
 .button.secondary {
-  background: var(--surface);
-  border-color: var(--border-strong);
+  background: var(--bg);
+  border-color: var(--border);
 }
 .button.secondary:hover {
   background: var(--bg-subtle);
@@ -411,11 +411,11 @@ pre,
 /* Inputs */
 .input {
   width: 100%;
-  height: 32px;
+  height: 34px;
   padding: 0 11px;
   border-radius: var(--radius);
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
+  border: 1px solid var(--border);
+  background: var(--bg);
   color: var(--text);
   font-size: var(--text-base);
   transition:
@@ -528,8 +528,9 @@ kbd {
 
 .card {
   border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   background: var(--surface);
+  box-shadow: var(--shadow-sm);
 }
 .card.raised {
   box-shadow: var(--shadow);

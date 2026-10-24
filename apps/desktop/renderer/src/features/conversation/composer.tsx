@@ -22,7 +22,7 @@ import { Select } from "../../ui/select"
 import { ModelPicker } from "./model-picker"
 import { COMPACT, loadCommands } from "./send"
 import { apply, fileUrl, trigger, type Trigger } from "./suggest"
-import { mentionChoices, type Product } from "./members"
+import { Avatar, mentionChoices, type Product } from "./members"
 
 const MODES: PermissionMode[] = ["readonly", "ask", "auto"]
 export const modeOptions = () => [
@@ -44,9 +44,13 @@ type Option = {
   value: string
   label: string
   detail?: string
+  section: "member" | "file" | "command"
   directory?: boolean
   seat?: boolean
 }
+
+const sectionLabel = (section: Option["section"]) =>
+  section === "member" ? t("prompt.members") : section === "file" ? t("prompt.files") : t("prompt.commands")
 
 /** Context usage: share of the model's context window used by the latest reply; hover for tokens and cost */
 function Usage(props: { sessionID: string }) {
@@ -86,6 +90,8 @@ export function Composer(props: {
   compact?: boolean
   autofocus?: boolean
   placeholder?: string
+  /** Coworker chats and collaboration groups inherit their execution settings from their configuration */
+  hideModelControls?: boolean
   /** Group members offered by @ */
   seats?: readonly { name: string; product: string; role?: string }[]
   products?: readonly Product[]
@@ -136,15 +142,21 @@ export function Composer(props: {
         const list = await loadCommands(trigger.dir)
         const query = trigger.query.toLowerCase()
         return [
-          { value: COMPACT, label: COMPACT, detail: t("prompt.compact") },
-          ...list.map((item) => ({ value: item.name, label: item.name, detail: item.description })),
+          { value: COMPACT, label: COMPACT, detail: t("prompt.compact"), section: "command" as const },
+          ...list.map((item) => ({
+            value: item.name,
+            label: item.name,
+            detail: item.description,
+            section: "command" as const,
+          })),
         ].filter((item) => item.value.toLowerCase().includes(query))
       }
-      const found = await call(client(trigger.dir).find.files({ query: trigger.query, limit: 20 })).catch(() => [])
+      const found = await call(client(trigger.dir).find.files({ query: trigger.query, limit: 8 })).catch(() => [])
       const mentions = mentionChoices(trigger.query, trigger.seats, trigger.products).map((choice) => ({
         value: choice.name,
         label: choice.name,
         detail: choice.detail,
+        section: "member" as const,
         seat: true,
       }))
       return [
@@ -152,6 +164,7 @@ export function Composer(props: {
         ...found.map((path) => ({
           value: path.replace(/\\/g, "/"),
           label: path.replace(/\\/g, "/"),
+          section: "file" as const,
           directory: /[\\/]$/.test(path),
         })),
       ]
@@ -245,7 +258,7 @@ export function Composer(props: {
       event.preventDefault()
       void submit()
     }
-    if (event.key === "Tab" && event.shiftKey) {
+    if (event.key === "Tab" && event.shiftKey && !props.hideModelControls) {
       event.preventDefault()
       const index = MODES.indexOf(current().mode)
       setMode(MODES[(index + 1) % MODES.length]!)
@@ -312,28 +325,54 @@ export function Composer(props: {
           aria-label={at()?.kind === "file" ? t("prompt.mention") : t("prompt.command")}
         >
           <For each={options()}>
-            {(option, index) => (
-              <div
-                id={`composer-suggest-${index()}`}
-                class="menu-item"
-                role="option"
-                aria-selected={index() === active()}
-                data-highlighted={index() === active() ? "" : undefined}
-                onMouseEnter={() => setActive(index())}
-                onMouseDown={(event) => {
-                  event.preventDefault()
-                  select(option)
-                }}
-              >
-                <Show when={at()?.kind === "file"} fallback={<SquareSlash class="icon icon-sm muted" />}>
-                  {option.directory ? <Folder class="icon icon-sm muted" /> : <FileText class="icon icon-sm muted" />}
-                </Show>
-                <span class="ellipsis mono">{option.label}</span>
-                <Show when={option.detail}>
-                  <span class="desc ellipsis">{option.detail}</span>
-                </Show>
-              </div>
-            )}
+            {(option, index) => {
+              const previous = () => (index() > 0 ? options()![index() - 1]?.section : undefined)
+              return (
+                <>
+                  <Show when={previous() !== option.section}>
+                    <div class="suggest-section">{sectionLabel(option.section)}</div>
+                  </Show>
+                  <div
+                    id={`composer-suggest-${index()}`}
+                    class="menu-item suggest-item"
+                    role="option"
+                    aria-selected={index() === active()}
+                    data-highlighted={index() === active() ? "" : undefined}
+                    onMouseEnter={() => setActive(index())}
+                    onMouseDown={(event) => {
+                      event.preventDefault()
+                      select(option)
+                    }}
+                  >
+                    <Show
+                      when={option.section === "member"}
+                      fallback={
+                        <span class="suggest-icon">
+                          <Show
+                            when={option.section === "command"}
+                            fallback={
+                              option.directory ? <Folder class="icon icon-sm" /> : <FileText class="icon icon-sm" />
+                            }
+                          >
+                            <SquareSlash class="icon icon-sm" />
+                          </Show>
+                        </span>
+                      }
+                    >
+                      <Avatar id={option.value} name={option.label} />
+                    </Show>
+                    <span class="suggest-copy">
+                      <span class="suggest-name ellipsis" classList={{ mono: option.section !== "member" }}>
+                        {option.label}
+                      </span>
+                      <Show when={option.detail}>
+                        <span class="suggest-detail ellipsis">{option.detail}</span>
+                      </Show>
+                    </span>
+                  </div>
+                </>
+              )
+            }}
           </For>
         </div>
       </Show>
@@ -380,20 +419,20 @@ export function Composer(props: {
         <button class="icon-button" aria-label={t("prompt.attach")} onClick={() => void pick()}>
           <Paperclip class="icon" />
         </button>
-        <Show when={!connected()}>
+        <Show when={!connected() && !props.hideModelControls}>
           <button class="chip accent" onClick={() => setUi("settings", "models")}>
             {t("prompt.noModel")}
           </button>
         </Show>
         <span class="spacer" />
         <Show when={props.sessionID}>{(id) => <Usage sessionID={id()} />}</Show>
-        <Show when={connected()}>
+        <Show when={connected() && !props.hideModelControls}>
           <ModelPicker
             value={current().model}
             onChange={(model) => choose(props.sessionID, props.directory, { model, variant: undefined })}
           />
         </Show>
-        <Show when={variants().length}>
+        <Show when={variants().length && !props.hideModelControls}>
           <Select
             label={t("model.variant")}
             options={[
@@ -412,7 +451,9 @@ export function Composer(props: {
             )}
           />
         </Show>
-        <Select label={t("mode.label")} options={modeOptions()} value={current().mode} onChange={setMode} />
+        <Show when={!props.hideModelControls}>
+          <Select label={t("mode.label")} options={modeOptions()} value={current().mode} onChange={setMode} />
+        </Show>
         <Show
           when={props.busy && !text().trim()}
           fallback={

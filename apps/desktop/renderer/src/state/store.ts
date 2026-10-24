@@ -324,8 +324,8 @@ export async function loadMore(directory: string) {
   await refresh(directory, shown + PAGE)
 }
 
-/** A project's conversations (root sessions) in the sidebar, most recently updated first */
-export function sessionsOf(folder: Folder) {
+/** Every root conversation in a project, including coworker DMs and collaboration groups */
+export function allSessionsOf(folder: Folder) {
   const project = folder.project
   if (!project) return []
   return state.sessions.session
@@ -333,10 +333,14 @@ export function sessionsOf(folder: Folder) {
       (session) =>
         !session.parentID &&
         session.projectID === project.id &&
-        session.metadata?.kind !== "coworker" &&
         (project.id !== "global" || sameDir(session.directory, folder.directory)),
     )
     .toSorted((a, b) => b.time.updated - a.time.updated)
+}
+
+/** A project's non-coworker conversations (root sessions), most recently updated first */
+export function sessionsOf(folder: Folder) {
+  return allSessionsOf(folder).filter((session) => session.metadata?.kind !== "coworker")
 }
 
 /** Agent DM sessions for all-chat (metadata.kind === coworker), optionally filtered by coworker id */

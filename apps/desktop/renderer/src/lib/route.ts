@@ -21,7 +21,7 @@ export const sessionPath = (directory: string, sessionID?: string) =>
   `/${encodeDir(directory)}/session${sessionID ? `/${encodeURIComponent(sessionID)}` : ""}`
 
 /** all-chat: contacts, world, bindings, and agent DMs */
-export const coworkerPath = (directory: string, coworkerID?: string, tab?: "world" | "bindings") => {
+export const coworkerPath = (directory: string, coworkerID?: string, tab?: "world" | "groups" | "bindings") => {
   const base = `/${encodeDir(directory)}/coworker`
   if (!coworkerID) return base
   const path = `${base}/${encodeURIComponent(coworkerID)}`

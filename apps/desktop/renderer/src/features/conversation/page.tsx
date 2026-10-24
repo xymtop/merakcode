@@ -2,9 +2,11 @@ import ArrowLeft from "lucide-solid/icons/arrow-left"
 import Ellipsis from "lucide-solid/icons/ellipsis"
 import GitBranch from "lucide-solid/icons/git-branch"
 import GitMerge from "lucide-solid/icons/git-merge"
+import Settings2 from "lucide-solid/icons/settings-2"
 import Undo2 from "lucide-solid/icons/undo-2"
 import Users from "lucide-solid/icons/users"
 import { createEffect, createMemo, createSignal, on, Show } from "solid-js"
+import type { Coworker } from "@merakcode/sdk/client"
 import { useNavigate } from "@solidjs/router"
 import { t } from "../../i18n"
 import { sameDir, sessionPath } from "../../lib/route"
@@ -39,6 +41,7 @@ import { Approval, Question } from "./dock"
 import { askedBy } from "./members"
 import { Messages } from "./messages"
 import { restore, send, stop } from "./send"
+import { AgentAvatar } from "../coworker/avatar"
 
 /**
  * Discards a worktree conversation: deletes the conversation first (while its worktree directory still exists), then
@@ -132,7 +135,16 @@ function Merge(props: {
 }
 
 /** A conversation: messages, permissions and questions, composer, side panel and bottom terminal */
-export function Conversation(props: { id: string; directory: string }) {
+export function Conversation(props: {
+  id: string
+  directory: string
+  agent?: Coworker
+  coworkerID?: string
+  onOpenSettings?: () => void
+  onOpenWorld?: () => void
+  onOpenGroups?: () => void
+  onOpenChat?: () => void
+}) {
   const navigate = useNavigate()
   const [merging, setMerging] = createSignal(false)
   const [renaming, setRenaming] = createSignal(false)
@@ -213,12 +225,32 @@ export function Conversation(props: { id: string; directory: string }) {
                 </button>
               )}
             </Show>
-            <span class="topbar-avatar" data-group={isGroup() ? "" : undefined} aria-hidden="true">
-              <Show when={isGroup()} fallback={<img src="/logo.svg" alt="" />}>
-                <Users class="icon" />
-              </Show>
-            </span>
-            <span class="title ellipsis">{info()?.title ?? ""}</span>
+            <Show
+              when={props.agent}
+              fallback={
+                <>
+                  <span class="topbar-avatar" data-group={isGroup() ? "" : undefined} aria-hidden="true">
+                    <Show when={isGroup()} fallback={<img src="/logo.svg" alt="" />}>
+                      <Users class="icon" />
+                    </Show>
+                  </span>
+                  <span class="title ellipsis">{info()?.title ?? ""}</span>
+                </>
+              }
+            >
+              {(agent) => (
+                <span class="agent-title">
+                  <AgentAvatar id={props.coworkerID ?? agent().id} name={agent().name} />
+                  <span class="agent-title-copy">
+                    <span class="title ellipsis">{agent().name}</span>
+                    <span class="agent-title-meta">
+                      <span class="status-dot" data-active="" />
+                      {t("coworker.ready")}
+                    </span>
+                  </span>
+                </span>
+              )}
+            </Show>
             <Show when={group.group()}>
               {(value) => (
                 <button
@@ -250,23 +282,55 @@ export function Conversation(props: { id: string; directory: string }) {
           </>
         }
         actions={
-          <Menu
-            label={t("topbar.menu")}
-            trigger={<Ellipsis class="icon" />}
-            items={[
-              { label: t("sidebar.new"), onSelect: () => navigate(sessionPath(props.directory)) },
-              { label: t("sidebar.rename"), onSelect: () => setRenaming(true) },
-              { label: t("palette.cmd.review"), onSelect: () => openReview({ scope: "session" }) },
-              ...(worktree()
-                ? [
-                    "separator" as const,
-                    { label: t("worktree.discard"), danger: true, onSelect: () => setDiscarding(true) },
-                  ]
-                : []),
-            ]}
-          />
+          <>
+            <Show when={props.agent && props.onOpenSettings}>
+              <button class="button secondary sm" onClick={props.onOpenSettings}>
+                <Settings2 class="icon icon-sm" />
+                {t("sidebar.settings")}
+              </button>
+            </Show>
+            <Menu
+              label={t("topbar.menu")}
+              trigger={<Ellipsis class="icon" />}
+              items={[
+                { label: t("sidebar.new"), onSelect: () => navigate(sessionPath(props.directory)) },
+                { label: t("sidebar.rename"), onSelect: () => setRenaming(true) },
+                { label: t("palette.cmd.review"), onSelect: () => openReview({ scope: "session" }) },
+                ...(worktree()
+                  ? [
+                      "separator" as const,
+                      { label: t("worktree.discard"), danger: true, onSelect: () => setDiscarding(true) },
+                    ]
+                  : []),
+              ]}
+            />
+          </>
         }
       >
+        <Show when={props.agent}>
+          {(agent) => (
+            <>
+              <div class="agent-servicebar">
+                <span>{agent().duty || t("coworker.contacts.none")}</span>
+                <span class="agent-service-status">
+                  <span class="status-dot" data-active="" />
+                  {running() ? t("status.running") : t("coworker.ready")}
+                </span>
+              </div>
+              <nav class="agent-tabs" aria-label={t("coworker.agent")}>
+                <button class="agent-tab" aria-current="page" onClick={props.onOpenChat}>
+                  {t("coworker.privateChat")}
+                </button>
+                <button class="agent-tab" onClick={props.onOpenWorld}>
+                  {t("coworker.world")}
+                </button>
+                <button class="agent-tab" onClick={props.onOpenGroups}>
+                  {t("coworker.groups")}
+                </button>
+              </nav>
+            </>
+          )}
+        </Show>
         <div class="chat-area">
           <div class="chat-main">
             <Show when={isGroup()}>
@@ -277,6 +341,7 @@ export function Conversation(props: { id: string; directory: string }) {
               directory={dir()}
               onReviewTurn={reviewTurn}
               onReviewFile={reviewFile}
+              assistant={props.agent ? { name: props.agent.name } : undefined}
               group={
                 group.group()
                   ? {
@@ -327,7 +392,14 @@ export function Conversation(props: { id: string; directory: string }) {
                   busy={running()}
                   compact
                   autofocus
-                  placeholder={isGroup() ? t("group.placeholder") : undefined}
+                  hideModelControls={!!props.agent || isGroup()}
+                  placeholder={
+                    props.agent
+                      ? t("prompt.placeholderAgent", { name: props.agent.name })
+                      : isGroup()
+                        ? t("group.placeholder")
+                        : undefined
+                  }
                   seats={group.group()?.seats}
                   products={isGroup() ? group.products() : undefined}
                   onSubmit={(submission) => send(props.id, props.directory, submission)}
@@ -351,6 +423,7 @@ export function Conversation(props: { id: string; directory: string }) {
                 directory={dir()}
                 group={value()}
                 products={group.products()}
+                coworkers={group.coworkers()}
                 busy={(seatID) => busySeats().has(seatID)}
                 collapsed={ui.membersCollapsed}
                 onCollapsed={collapse}

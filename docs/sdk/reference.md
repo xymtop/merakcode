@@ -1045,11 +1045,11 @@ Create a collaboration group.
 
 Creates a session whose leader is a Merak seat, together with the seats named up front.
 
-| Parameter | Type                                                                  | Required | Description |
-| --------- | --------------------------------------------------------------------- | -------- | ----------- |
-| `title`   | `string`                                                              | no       |             |
-| `leader`  | `{ name: string; role?: string; duty?: string }`                      | yes      |             |
-| `seats`   | `({ name: string; role?: string; duty?: string; product: string })[]` | no       |             |
+| Parameter | Type                                                                                       | Required | Description |
+| --------- | ------------------------------------------------------------------------------------------ | -------- | ----------- |
+| `title`   | `string`                                                                                   | no       |             |
+| `leader`  | `{ name: string; role?: string; duty?: string; coworkerID?: string }`                      | yes      |             |
+| `seats`   | `({ name: string; role?: string; duty?: string; coworkerID?: string; product: string })[]` | no       |             |
 
 Returns: `{ sessionID: string; group: CollaborationGroup }`
 
@@ -1089,13 +1089,14 @@ Returns: `CollaborationProduct[]`
 
 Add a collaboration seat.
 
-| Parameter   | Type     | Required | Description                                          |
-| ----------- | -------- | -------- | ---------------------------------------------------- |
-| `sessionID` | `string` | yes      |                                                      |
-| `name`      | `string` | yes      |                                                      |
-| `role`      | `string` | no       | Short title such as product manager                  |
-| `duty`      | `string` | no       | What the seat is for; it goes into the seat's prompt |
-| `product`   | `string` | yes      |                                                      |
+| Parameter    | Type     | Required | Description                                          |
+| ------------ | -------- | -------- | ---------------------------------------------------- |
+| `sessionID`  | `string` | yes      |                                                      |
+| `name`       | `string` | yes      |                                                      |
+| `role`       | `string` | no       | Short title such as product manager                  |
+| `duty`       | `string` | no       | What the seat is for; it goes into the seat's prompt |
+| `coworkerID` | `string` | no       | Saved coworker this seat represents                  |
+| `product`    | `string` | yes      |                                                      |
 
 Returns: `CollaborationGroup`
 
@@ -1105,13 +1106,14 @@ Returns: `CollaborationGroup`
 
 Change a collaboration seat's name, role or duty.
 
-| Parameter   | Type     | Required | Description                                          |
-| ----------- | -------- | -------- | ---------------------------------------------------- |
-| `sessionID` | `string` | yes      |                                                      |
-| `seatID`    | `string` | yes      |                                                      |
-| `name`      | `string` | no       |                                                      |
-| `role`      | `string` | no       | Short title such as product manager                  |
-| `duty`      | `string` | no       | What the seat is for; it goes into the seat's prompt |
+| Parameter    | Type     | Required | Description                                          |
+| ------------ | -------- | -------- | ---------------------------------------------------- |
+| `sessionID`  | `string` | yes      |                                                      |
+| `seatID`     | `string` | yes      |                                                      |
+| `name`       | `string` | no       |                                                      |
+| `role`       | `string` | no       | Short title such as product manager                  |
+| `duty`       | `string` | no       | What the seat is for; it goes into the seat's prompt |
+| `coworkerID` | `string` | no       | Saved coworker this seat represents                  |
 
 Returns: `CollaborationGroup`
 
@@ -1152,11 +1154,12 @@ Create coworker.
 
 Create a coworker with a world folder skeleton, sync custom agent + rules, and return the contact card.
 
-| Parameter | Type     | Required | Description |
-| --------- | -------- | -------- | ----------- |
-| `name`    | `string` | yes      |             |
-| `duty`    | `string` | no       |             |
-| `id`      | `string` | no       |             |
+| Parameter  | Type                                                    | Required | Description |
+| ---------- | ------------------------------------------------------- | -------- | ----------- |
+| `name`     | `string`                                                | yes      |             |
+| `duty`     | `string`                                                | no       |             |
+| `id`       | `string`                                                | no       |             |
+| `bindings` | `{ model?: string; skills?: string[]; mcp?: string[] }` | no       |             |
 
 Returns: `Coworker`
 

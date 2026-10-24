@@ -1,4 +1,4 @@
-import type { CollaborationProduct, CollaborationSeat, Part } from "@merakcode/sdk/client"
+import type { CollaborationProduct, CollaborationSeat, Coworker, Part } from "@merakcode/sdk/client"
 import Plus from "lucide-solid/icons/plus"
 import X from "lucide-solid/icons/x"
 import { createEffect, createSignal, For, on, Show } from "solid-js"
@@ -8,7 +8,7 @@ import { Select } from "../../ui/select"
 
 export type Seat = CollaborationSeat
 export type Product = CollaborationProduct
-export type SeatDraft = { name: string; role: string; duty: string; product: string }
+export type SeatDraft = { name: string; role: string; duty: string; product: string; coworkerID?: string }
 
 /** A member's avatar, tinted by its id, so a renamed member keeps its color */
 export function Avatar(props: { id: string; name: string }) {
@@ -94,6 +94,7 @@ function versionNote(product: Product) {
 function MemberForm(props: {
   seat?: Seat
   products: readonly Product[]
+  coworkers?: readonly Coworker[]
   taken: readonly string[]
   onSubmit: (draft: SeatDraft) => void
   onRemove?: () => void
@@ -107,13 +108,30 @@ function MemberForm(props: {
   const [name, setName] = createSignal(props.seat?.name ?? "")
   const [role, setRole] = createSignal(props.seat?.role ?? "")
   const [duty, setDuty] = createSignal(props.seat?.duty ?? "")
+  const [coworkerID, setCoworkerID] = createSignal(props.seat?.coworkerID ?? "")
   createEffect(on(firstConnected, (first) => !product() && first && setProduct(first)))
   const problem = () => nameProblem(name(), props.taken)
   const chosen = () => props.products.find((item) => item.id === product())
-  const usable = () => !!props.seat || !!chosen()?.connected
+  const coworkerMode = () => !props.seat && props.coworkers !== undefined
+  const linked = () => !!coworkerID() && !!props.coworkers?.some((item) => item.id === coworkerID())
+  const usable = () => !!props.seat || (coworkerMode() ? linked() : !!chosen()?.connected)
+  const selectCoworker = (id: string) => {
+    setCoworkerID(id)
+    const coworker = props.coworkers?.find((item) => item.id === id)
+    if (!coworker) return
+    setName(coworker.name)
+    setDuty(coworker.duty)
+    setProduct("merak")
+  }
   const submit = () => {
     if (problem() || !usable()) return
-    props.onSubmit({ name: name().trim(), role: role().trim(), duty: duty().trim(), product: product() })
+    props.onSubmit({
+      name: name().trim(),
+      role: role().trim(),
+      duty: duty().trim(),
+      product: product(),
+      ...(coworkerID() ? { coworkerID: coworkerID() } : {}),
+    })
   }
   return (
     <form
@@ -137,15 +155,34 @@ function MemberForm(props: {
           </button>
         </div>
       </Show>
-      <Show
-        when={!props.seat}
-        fallback={
-          <div class="member-field">
-            <span class="member-label">{t("group.product")}</span>
-            <span class="muted">{productTitle(product(), props.products)}</span>
-          </div>
-        }
-      >
+      <Show when={!props.seat && props.coworkers?.length}>
+        <div class="member-field">
+          <span class="member-label">{t("group.coworker")}</span>
+          <Select
+            label={t("group.selectCoworker")}
+            value={coworkerID() || undefined}
+            onChange={selectCoworker}
+            placeholder={t("group.selectCoworker")}
+            options={(props.coworkers ?? []).map((item) => ({
+              value: item.id,
+              label: item.name,
+              description: item.duty,
+            }))}
+          />
+        </div>
+      </Show>
+      <Show when={!props.seat && props.coworkers && !props.coworkers.length}>
+        <p class="member-checking subtle" role="status">
+          {t("group.coworkerEmpty")}
+        </p>
+      </Show>
+      <Show when={props.seat}>
+        <div class="member-field">
+          <span class="member-label">{t("group.product")}</span>
+          <span class="muted">{productTitle(product(), props.products)}</span>
+        </div>
+      </Show>
+      <Show when={!props.seat && props.coworkers === undefined}>
         {/* Shown once the products are in: options arriving while the list is open are not picked up */}
         <Show when={props.products.length} fallback={<p class="member-checking subtle pulse">{t("group.checking")}</p>}>
           <Select
@@ -181,10 +218,21 @@ function MemberForm(props: {
           </Show>
         </Show>
       </Show>
-      <label class="member-field">
-        <span class="member-label">{t("group.seatName")}</span>
-        <input class="input" value={name()} onInput={(event) => setName(event.currentTarget.value)} />
-      </label>
+      <Show when={!linked() && !coworkerMode()}>
+        <label class="member-field">
+          <span class="member-label">{t("group.seatName")}</span>
+          <input class="input" value={name()} onInput={(event) => setName(event.currentTarget.value)} />
+        </label>
+      </Show>
+      <Show when={linked()}>
+        <div class="member-field">
+          <span class="member-label">{t("group.coworker")}</span>
+          <span class="member-linked-agent">
+            <strong>{name()}</strong>
+            <span class="subtle">{duty()}</span>
+          </span>
+        </div>
+      </Show>
       <label class="member-field">
         <span class="member-label">{t("group.role")}</span>
         <input
@@ -231,6 +279,7 @@ function MemberForm(props: {
 export function MemberList(props: {
   seats: readonly Seat[]
   products: readonly Product[]
+  coworkers?: readonly Coworker[]
   busy?: (seatID: string) => boolean
   /** Opens this member, or the add form when "new"; at lets the same request open again */
   open?: { target: string; at: number }
@@ -246,6 +295,8 @@ export function MemberList(props: {
     ),
   )
   const taken = (except?: string) => props.seats.filter((seat) => seat.id !== except).map((seat) => seat.name)
+  const availableCoworkers = () =>
+    props.coworkers?.filter((coworker) => !props.seats.some((seat) => seat.coworkerID === coworker.id))
   // The caller reports a failure; the form stays open so nothing typed is lost
   const done = (action: unknown) =>
     Promise.resolve(action).then(
@@ -280,6 +331,7 @@ export function MemberList(props: {
               <MemberForm
                 seat={seat}
                 products={props.products}
+                coworkers={props.coworkers}
                 taken={taken(seat.id)}
                 onSubmit={(draft) => void done(props.onSave(seat, draft))}
                 onRemove={seat.leader ? undefined : () => props.onRemove(seat)}
@@ -300,6 +352,7 @@ export function MemberList(props: {
         <div class="member open">
           <MemberForm
             products={props.products}
+            coworkers={availableCoworkers()}
             taken={taken()}
             onSubmit={(draft) => void done(props.onAdd(draft))}
             onCancel={() => setOpen(undefined)}
