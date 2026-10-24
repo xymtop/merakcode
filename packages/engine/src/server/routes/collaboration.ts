@@ -59,6 +59,8 @@ const GroupSummary = z
     title: z.string(),
     /** The project the group works in */
     directory: z.string(),
+    /** Optional app kind, such as "topic". Ordinary collaboration groups have none. */
+    kind: z.string().optional(),
     seats: Seat.omit({ id: true, privateSessionID: true }).array(),
   })
   .meta({ ref: "CollaborationGroupSummary" })
@@ -231,6 +233,7 @@ export const CollaborationRoutes = lazy(() =>
             sessionID: session.id,
             title: session.title,
             directory: session.directory,
+            kind: typeof session.metadata?.kind === "string" ? session.metadata.kind : undefined,
             seats: group.seats.map(({ name, role, duty, product, coworkerID, leader }) => ({
               name,
               role,
