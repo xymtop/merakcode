@@ -59,6 +59,38 @@ import type {
   ConfigUpdateResponses,
   ConfigWarningsErrors,
   ConfigWarningsResponses,
+  CoworkerBindingsUpdateErrors,
+  CoworkerBindingsUpdateResponses,
+  CoworkerCreateErrors,
+  CoworkerCreateResponses,
+  CoworkerDeleteErrors,
+  CoworkerDeleteResponses,
+  CoworkerGetErrors,
+  CoworkerGetResponses,
+  CoworkerListErrors,
+  CoworkerListResponses,
+  CoworkerProfileReadErrors,
+  CoworkerProfileReadResponses,
+  CoworkerProfileWriteErrors,
+  CoworkerProfileWriteResponses,
+  CoworkerSyncErrors,
+  CoworkerSyncResponses,
+  CoworkerUpdateErrors,
+  CoworkerUpdateResponses,
+  CoworkerWorldCreateFileErrors,
+  CoworkerWorldCreateFileResponses,
+  CoworkerWorldMkdirErrors,
+  CoworkerWorldMkdirResponses,
+  CoworkerWorldReadErrors,
+  CoworkerWorldReadResponses,
+  CoworkerWorldRemoveErrors,
+  CoworkerWorldRemoveResponses,
+  CoworkerWorldSearchErrors,
+  CoworkerWorldSearchResponses,
+  CoworkerWorldTreeErrors,
+  CoworkerWorldTreeResponses,
+  CoworkerWorldWriteErrors,
+  CoworkerWorldWriteResponses,
   EventSubscribeErrors,
   EventSubscribeResponse,
   EventSubscribeResponses,
@@ -2912,6 +2944,557 @@ export class Collaboration extends HeyApiClient {
   }
 }
 
+export class Profile extends HeyApiClient {
+  /**
+   * Read coworker PROFILE.md
+   */
+  public read<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerProfileReadResponses, CoworkerProfileReadErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<CoworkerProfileReadResponses, CoworkerProfileReadErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/profile",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Write coworker PROFILE.md
+   */
+  public write<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      content: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerProfileWriteResponses, CoworkerProfileWriteErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "content" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<
+      CoworkerProfileWriteResponses,
+      CoworkerProfileWriteErrors,
+      ThrowOnError
+    >({
+      url: "/coworker/{coworkerID}/profile",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Bindings extends HeyApiClient {
+  /**
+   * Update coworker bindings
+   *
+   * Set model / selected skills / selected MCP servers from the project inventory, then sync agent permissions.
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      model?: string
+      skills?: Array<string>
+      mcp?: Array<string>
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerBindingsUpdateResponses, CoworkerBindingsUpdateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "model" },
+            { in: "body", key: "skills" },
+            { in: "body", key: "mcp" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<
+      CoworkerBindingsUpdateResponses,
+      CoworkerBindingsUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/coworker/{coworkerID}/bindings",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class World extends HeyApiClient {
+  /**
+   * Coworker world tree
+   */
+  public tree<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldTreeResponses, CoworkerWorldTreeErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<CoworkerWorldTreeResponses, CoworkerWorldTreeErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/world",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Delete a world file or folder
+   */
+  public remove<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      path: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldRemoveResponses, CoworkerWorldRemoveErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<
+      CoworkerWorldRemoveResponses,
+      CoworkerWorldRemoveErrors,
+      ThrowOnError
+    >({
+      url: "/coworker/{coworkerID}/world/file",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Read a world file
+   */
+  public read<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      path: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldReadResponses, CoworkerWorldReadErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<CoworkerWorldReadResponses, CoworkerWorldReadErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/world/file",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Create an empty world Markdown file
+   */
+  public createFile<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      path: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldCreateFileResponses, CoworkerWorldCreateFileErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      CoworkerWorldCreateFileResponses,
+      CoworkerWorldCreateFileErrors,
+      ThrowOnError
+    >({
+      url: "/coworker/{coworkerID}/world/file",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Write a world file
+   */
+  public write<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      path: string
+      content: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldWriteResponses, CoworkerWorldWriteErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "path" },
+            { in: "body", key: "content" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<CoworkerWorldWriteResponses, CoworkerWorldWriteErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/world/file",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Create a world folder
+   */
+  public mkdir<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      path: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldMkdirResponses, CoworkerWorldMkdirErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "path" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<CoworkerWorldMkdirResponses, CoworkerWorldMkdirErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/world/mkdir",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Search coworker world files
+   */
+  public search<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      q: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerWorldSearchResponses, CoworkerWorldSearchErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "query", key: "q" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<CoworkerWorldSearchResponses, CoworkerWorldSearchErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/world/search",
+      ...options,
+      ...params,
+    })
+  }
+}
+
+export class Coworker extends HeyApiClient {
+  /**
+   * List coworkers
+   *
+   * List all-chat coworkers in the current project (contacts).
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerListResponses, CoworkerListErrors, ThrowOnError> {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<CoworkerListResponses, CoworkerListErrors, ThrowOnError>({
+      url: "/coworker",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Create coworker
+   *
+   * Create a coworker with a world folder skeleton, sync custom agent + rules, and return the contact card.
+   */
+  public create<ThrowOnError extends boolean = false>(
+    parameters: {
+      directory?: string
+      name: string
+      duty?: string
+      id?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerCreateResponses, CoworkerCreateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "name" },
+            { in: "body", key: "duty" },
+            { in: "body", key: "id" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<CoworkerCreateResponses, CoworkerCreateErrors, ThrowOnError>({
+      url: "/coworker",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Delete coworker
+   *
+   * Move the coworker folder to .trash and remove synced agent/rules files.
+   */
+  public delete<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerDeleteResponses, CoworkerDeleteErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<CoworkerDeleteResponses, CoworkerDeleteErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Get coworker
+   */
+  public get<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerGetResponses, CoworkerGetErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<CoworkerGetResponses, CoworkerGetErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Update coworker
+   *
+   * Update display name and duty summary in PROFILE.md, then re-sync the agent prompt.
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      name?: string
+      duty?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerUpdateResponses, CoworkerUpdateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "name" },
+            { in: "body", key: "duty" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<CoworkerUpdateResponses, CoworkerUpdateErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Re-sync coworker agent and rules
+   */
+  public sync<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerSyncResponses, CoworkerSyncErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<CoworkerSyncResponses, CoworkerSyncErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/sync",
+      ...options,
+      ...params,
+    })
+  }
+
+  private _profile?: Profile
+  get profile(): Profile {
+    return (this._profile ??= new Profile({ client: this.client }))
+  }
+
+  private _bindings?: Bindings
+  get bindings(): Bindings {
+    return (this._bindings ??= new Bindings({ client: this.client }))
+  }
+
+  private _world?: World
+  get world(): World {
+    return (this._world ??= new World({ client: this.client }))
+  }
+}
+
 export class Memory extends HeyApiClient {
   /**
    * List memories
@@ -5439,6 +6022,11 @@ export class MerakCodeClient extends HeyApiClient {
   private _collaboration?: Collaboration
   get collaboration(): Collaboration {
     return (this._collaboration ??= new Collaboration({ client: this.client }))
+  }
+
+  private _coworker?: Coworker
+  get coworker(): Coworker {
+    return (this._coworker ??= new Coworker({ client: this.client }))
   }
 
   private _memory?: Memory

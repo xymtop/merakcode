@@ -3587,6 +3587,29 @@ export type CollaborationGroup = {
   seq: number
 }
 
+export type CoworkerBindings = {
+  model?: string
+  skills: Array<string>
+  mcp: Array<string>
+}
+
+export type Coworker = {
+  id: string
+  name: string
+  duty: string
+  profilePath: string
+  worldPath: string
+  bindings: CoworkerBindings
+}
+
+export type CoworkerWorldNode = {
+  name: string
+  path: string
+  relative: string
+  type: "file" | "directory"
+  children?: Array<CoworkerWorldNode>
+}
+
 export type MemoryEntry = {
   /**
    * Path relative to the memory root, same form as MEMORY.md index links
@@ -6691,6 +6714,602 @@ export type CollaborationSeatUpdateResponses = {
 }
 
 export type CollaborationSeatUpdateResponse = CollaborationSeatUpdateResponses[keyof CollaborationSeatUpdateResponses]
+
+export type CoworkerListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/coworker"
+}
+
+export type CoworkerListErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CoworkerListError = CoworkerListErrors[keyof CoworkerListErrors]
+
+export type CoworkerListResponses = {
+  /**
+   * Coworkers
+   */
+  200: Array<Coworker>
+}
+
+export type CoworkerListResponse = CoworkerListResponses[keyof CoworkerListResponses]
+
+export type CoworkerCreateData = {
+  body: {
+    name: string
+    duty?: string
+    id?: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/coworker"
+}
+
+export type CoworkerCreateErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+}
+
+export type CoworkerCreateError = CoworkerCreateErrors[keyof CoworkerCreateErrors]
+
+export type CoworkerCreateResponses = {
+  /**
+   * Created coworker
+   */
+  200: Coworker
+}
+
+export type CoworkerCreateResponse = CoworkerCreateResponses[keyof CoworkerCreateResponses]
+
+export type CoworkerDeleteData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}"
+}
+
+export type CoworkerDeleteErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerDeleteError = CoworkerDeleteErrors[keyof CoworkerDeleteErrors]
+
+export type CoworkerDeleteResponses = {
+  /**
+   * Deleted
+   */
+  200: {
+    id: string
+    trash: string
+  }
+}
+
+export type CoworkerDeleteResponse = CoworkerDeleteResponses[keyof CoworkerDeleteResponses]
+
+export type CoworkerGetData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}"
+}
+
+export type CoworkerGetErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerGetError = CoworkerGetErrors[keyof CoworkerGetErrors]
+
+export type CoworkerGetResponses = {
+  /**
+   * Coworker
+   */
+  200: Coworker
+}
+
+export type CoworkerGetResponse = CoworkerGetResponses[keyof CoworkerGetResponses]
+
+export type CoworkerUpdateData = {
+  body?: {
+    name?: string
+    duty?: string
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}"
+}
+
+export type CoworkerUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerUpdateError = CoworkerUpdateErrors[keyof CoworkerUpdateErrors]
+
+export type CoworkerUpdateResponses = {
+  /**
+   * Updated coworker
+   */
+  200: Coworker
+}
+
+export type CoworkerUpdateResponse = CoworkerUpdateResponses[keyof CoworkerUpdateResponses]
+
+export type CoworkerProfileReadData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/profile"
+}
+
+export type CoworkerProfileReadErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerProfileReadError = CoworkerProfileReadErrors[keyof CoworkerProfileReadErrors]
+
+export type CoworkerProfileReadResponses = {
+  /**
+   * Profile
+   */
+  200: {
+    path: string
+    content: string
+  }
+}
+
+export type CoworkerProfileReadResponse = CoworkerProfileReadResponses[keyof CoworkerProfileReadResponses]
+
+export type CoworkerProfileWriteData = {
+  body: {
+    content: string
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/profile"
+}
+
+export type CoworkerProfileWriteErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerProfileWriteError = CoworkerProfileWriteErrors[keyof CoworkerProfileWriteErrors]
+
+export type CoworkerProfileWriteResponses = {
+  /**
+   * Saved
+   */
+  200: {
+    path: string
+  }
+}
+
+export type CoworkerProfileWriteResponse = CoworkerProfileWriteResponses[keyof CoworkerProfileWriteResponses]
+
+export type CoworkerBindingsUpdateData = {
+  body?: {
+    model?: string
+    skills?: Array<string>
+    mcp?: Array<string>
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/bindings"
+}
+
+export type CoworkerBindingsUpdateErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerBindingsUpdateError = CoworkerBindingsUpdateErrors[keyof CoworkerBindingsUpdateErrors]
+
+export type CoworkerBindingsUpdateResponses = {
+  /**
+   * Updated coworker
+   */
+  200: Coworker
+}
+
+export type CoworkerBindingsUpdateResponse = CoworkerBindingsUpdateResponses[keyof CoworkerBindingsUpdateResponses]
+
+export type CoworkerSyncData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/sync"
+}
+
+export type CoworkerSyncErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerSyncError = CoworkerSyncErrors[keyof CoworkerSyncErrors]
+
+export type CoworkerSyncResponses = {
+  /**
+   * Synced
+   */
+  200: {
+    ok: true
+  }
+}
+
+export type CoworkerSyncResponse = CoworkerSyncResponses[keyof CoworkerSyncResponses]
+
+export type CoworkerWorldTreeData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/world"
+}
+
+export type CoworkerWorldTreeErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldTreeError = CoworkerWorldTreeErrors[keyof CoworkerWorldTreeErrors]
+
+export type CoworkerWorldTreeResponses = {
+  /**
+   * Tree
+   */
+  200: Array<CoworkerWorldNode>
+}
+
+export type CoworkerWorldTreeResponse = CoworkerWorldTreeResponses[keyof CoworkerWorldTreeResponses]
+
+export type CoworkerWorldRemoveData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query: {
+    directory?: string
+    path: string
+  }
+  url: "/coworker/{coworkerID}/world/file"
+}
+
+export type CoworkerWorldRemoveErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldRemoveError = CoworkerWorldRemoveErrors[keyof CoworkerWorldRemoveErrors]
+
+export type CoworkerWorldRemoveResponses = {
+  /**
+   * Deleted
+   */
+  200: {
+    relative: string
+  }
+}
+
+export type CoworkerWorldRemoveResponse = CoworkerWorldRemoveResponses[keyof CoworkerWorldRemoveResponses]
+
+export type CoworkerWorldReadData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query: {
+    directory?: string
+    path: string
+  }
+  url: "/coworker/{coworkerID}/world/file"
+}
+
+export type CoworkerWorldReadErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldReadError = CoworkerWorldReadErrors[keyof CoworkerWorldReadErrors]
+
+export type CoworkerWorldReadResponses = {
+  /**
+   * File
+   */
+  200: {
+    path: string
+    relative: string
+    content: string
+  }
+}
+
+export type CoworkerWorldReadResponse = CoworkerWorldReadResponses[keyof CoworkerWorldReadResponses]
+
+export type CoworkerWorldCreateFileData = {
+  body: {
+    path: string
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/world/file"
+}
+
+export type CoworkerWorldCreateFileErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldCreateFileError = CoworkerWorldCreateFileErrors[keyof CoworkerWorldCreateFileErrors]
+
+export type CoworkerWorldCreateFileResponses = {
+  /**
+   * Created
+   */
+  200: {
+    path: string
+    relative: string
+  }
+}
+
+export type CoworkerWorldCreateFileResponse = CoworkerWorldCreateFileResponses[keyof CoworkerWorldCreateFileResponses]
+
+export type CoworkerWorldWriteData = {
+  body: {
+    path: string
+    content: string
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/world/file"
+}
+
+export type CoworkerWorldWriteErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldWriteError = CoworkerWorldWriteErrors[keyof CoworkerWorldWriteErrors]
+
+export type CoworkerWorldWriteResponses = {
+  /**
+   * Saved
+   */
+  200: {
+    path: string
+    relative: string
+  }
+}
+
+export type CoworkerWorldWriteResponse = CoworkerWorldWriteResponses[keyof CoworkerWorldWriteResponses]
+
+export type CoworkerWorldMkdirData = {
+  body: {
+    path: string
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/world/mkdir"
+}
+
+export type CoworkerWorldMkdirErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldMkdirError = CoworkerWorldMkdirErrors[keyof CoworkerWorldMkdirErrors]
+
+export type CoworkerWorldMkdirResponses = {
+  /**
+   * Created
+   */
+  200: {
+    path: string
+    relative: string
+  }
+}
+
+export type CoworkerWorldMkdirResponse = CoworkerWorldMkdirResponses[keyof CoworkerWorldMkdirResponses]
+
+export type CoworkerWorldSearchData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query: {
+    directory?: string
+    q: string
+  }
+  url: "/coworker/{coworkerID}/world/search"
+}
+
+export type CoworkerWorldSearchErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerWorldSearchError = CoworkerWorldSearchErrors[keyof CoworkerWorldSearchErrors]
+
+export type CoworkerWorldSearchResponses = {
+  /**
+   * Hits
+   */
+  200: Array<{
+    relative: string
+    path: string
+    kind: "name" | "content"
+  }>
+}
+
+export type CoworkerWorldSearchResponse = CoworkerWorldSearchResponses[keyof CoworkerWorldSearchResponses]
 
 export type MemoryListData = {
   body?: never

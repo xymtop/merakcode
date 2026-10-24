@@ -1,6 +1,7 @@
 import type { Command, FilePartInput, PermissionMode, UserMessage } from "@merakcode/sdk/client"
 import { createStore } from "solid-js/store"
 import { t } from "../../i18n"
+import { coworkerIdOf, isCoworkerSession } from "../../lib/coworker"
 import { choice, modelKey } from "../../state/models"
 import { call, client } from "../../state/client"
 import { listen, partsOf, reload, session } from "../../state/store"
@@ -35,6 +36,7 @@ export async function send(sessionID: string, directory: string, submission: Sub
   const info = session(sessionID)
   const dir = info?.directory ?? directory
   const picked = choice(sessionID, directory)
+  const agent = isCoworkerSession(info) ? coworkerIdOf(info) : undefined
   const command = parseCommand(submission.text)
   if (command?.name === COMPACT && picked.model) {
     await call(client(dir).session.summarize({ sessionID, ...picked.model }))
@@ -48,6 +50,7 @@ export async function send(sessionID: string, directory: string, submission: Sub
         arguments: command.arguments,
         ...(picked.model ? { model: modelKey(picked.model) } : {}),
         ...(picked.variant ? { variant: picked.variant } : {}),
+        ...(agent ? { agent } : {}),
         permissionMode: mode ?? picked.mode,
         ...(submission.files.length ? { parts: submission.files } : {}),
       }),
@@ -60,6 +63,7 @@ export async function send(sessionID: string, directory: string, submission: Sub
       parts: [...(submission.text ? [{ type: "text" as const, text: submission.text }] : []), ...submission.files],
       ...(picked.model ? { model: picked.model } : {}),
       ...(picked.variant ? { variant: picked.variant } : {}),
+      ...(agent ? { agent } : {}),
       permissionMode: mode ?? picked.mode,
     }),
   )

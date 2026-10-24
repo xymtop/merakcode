@@ -9,6 +9,7 @@ import { restoreLayout, setUi, togglePanel, ui } from "./state/ui"
 import { toast, Toasts } from "./ui/toast"
 import { Compose } from "./features/conversation/compose"
 import { Conversation } from "./features/conversation/page"
+import { CoworkerWorkspace } from "./features/coworker/page"
 import { Onboarding } from "./features/onboarding/onboarding"
 import { Palette } from "./features/palette/palette"
 import { Settings } from "./features/settings/settings"
@@ -157,6 +158,9 @@ export function App() {
     <Router root={Root}>
       <Route path="/" component={Home} />
       <Route path="/:dir/session/:id?" component={Workspace} />
+      <Route path="/:dir/coworker/:coworkerID/chat/:sessionID?" component={CoworkerWorkspace} />
+      <Route path="/:dir/coworker/:coworkerID/:tab?" component={CoworkerWorkspace} />
+      <Route path="/:dir/coworker" component={CoworkerWorkspace} />
       <Route path="*" component={() => <Navigate href="/" />} />
     </Router>
   )

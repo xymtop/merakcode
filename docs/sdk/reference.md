@@ -24,6 +24,10 @@ already fills in from `createMerakCodeClient({ directory })`, so it is left out 
 - [collaboration](#collaboration)
 - [collaboration.product](#collaborationproduct)
 - [collaboration.seat](#collaborationseat)
+- [coworker](#coworker)
+- [coworker.profile](#coworkerprofile)
+- [coworker.bindings](#coworkerbindings)
+- [coworker.world](#coworkerworld)
 - [memory](#memory)
 - [bash](#bash)
 - [tool.remote](#toolremote)
@@ -1125,6 +1129,229 @@ The Merak leader cannot be removed.
 | `seatID`    | `string` | yes      |             |
 
 Returns: `CollaborationGroup`
+
+## coworker
+
+### client.coworker.list
+
+`GET /coworker` · operationId `coworker.list`
+
+List coworkers.
+
+List all-chat coworkers in the current project (contacts).
+
+No parameters.
+
+Returns: `Coworker[]`
+
+### client.coworker.create
+
+`POST /coworker` · operationId `coworker.create`
+
+Create coworker.
+
+Create a coworker with a world folder skeleton, sync custom agent + rules, and return the contact card.
+
+| Parameter | Type     | Required | Description |
+| --------- | -------- | -------- | ----------- |
+| `name`    | `string` | yes      |             |
+| `duty`    | `string` | no       |             |
+| `id`      | `string` | no       |             |
+
+Returns: `Coworker`
+
+### client.coworker.get
+
+`GET /coworker/{coworkerID}` · operationId `coworker.get`
+
+Get coworker.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+
+Returns: `Coworker`
+
+### client.coworker.update
+
+`PATCH /coworker/{coworkerID}` · operationId `coworker.update`
+
+Update coworker.
+
+Update display name and duty summary in PROFILE.md, then re-sync the agent prompt.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `name`       | `string` | no       |             |
+| `duty`       | `string` | no       |             |
+
+Returns: `Coworker`
+
+### client.coworker.delete
+
+`DELETE /coworker/{coworkerID}` · operationId `coworker.delete`
+
+Delete coworker.
+
+Move the coworker folder to .trash and remove synced agent/rules files.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+
+Returns: `{ id: string; trash: string }`
+
+### client.coworker.sync
+
+`POST /coworker/{coworkerID}/sync` · operationId `coworker.sync`
+
+Re-sync coworker agent and rules.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+
+Returns: `{ ok: true }`
+
+## coworker.profile
+
+### client.coworker.profile.read
+
+`GET /coworker/{coworkerID}/profile` · operationId `coworker.profile.read`
+
+Read coworker PROFILE.md.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+
+Returns: `{ path: string; content: string }`
+
+### client.coworker.profile.write
+
+`PUT /coworker/{coworkerID}/profile` · operationId `coworker.profile.write`
+
+Write coworker PROFILE.md.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `content`    | `string` | yes      |             |
+
+Returns: `{ path: string }`
+
+## coworker.bindings
+
+### client.coworker.bindings.update
+
+`PUT /coworker/{coworkerID}/bindings` · operationId `coworker.bindings.update`
+
+Update coworker bindings.
+
+Set model / selected skills / selected MCP servers from the project inventory, then sync agent permissions.
+
+| Parameter    | Type       | Required | Description |
+| ------------ | ---------- | -------- | ----------- |
+| `coworkerID` | `string`   | yes      |             |
+| `model`      | `string`   | no       |             |
+| `skills`     | `string[]` | no       |             |
+| `mcp`        | `string[]` | no       |             |
+
+Returns: `Coworker`
+
+## coworker.world
+
+### client.coworker.world.tree
+
+`GET /coworker/{coworkerID}/world` · operationId `coworker.world.tree`
+
+Coworker world tree.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+
+Returns: `CoworkerWorldNode[]`
+
+### client.coworker.world.read
+
+`GET /coworker/{coworkerID}/world/file` · operationId `coworker.world.read`
+
+Read a world file.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `path`       | `string` | yes      |             |
+
+Returns: `{ path: string; relative: string; content: string }`
+
+### client.coworker.world.write
+
+`PUT /coworker/{coworkerID}/world/file` · operationId `coworker.world.write`
+
+Write a world file.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `path`       | `string` | yes      |             |
+| `content`    | `string` | yes      |             |
+
+Returns: `{ path: string; relative: string }`
+
+### client.coworker.world.createFile
+
+`POST /coworker/{coworkerID}/world/file` · operationId `coworker.world.createFile`
+
+Create an empty world Markdown file.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `path`       | `string` | yes      |             |
+
+Returns: `{ path: string; relative: string }`
+
+### client.coworker.world.remove
+
+`DELETE /coworker/{coworkerID}/world/file` · operationId `coworker.world.remove`
+
+Delete a world file or folder.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `path`       | `string` | yes      |             |
+
+Returns: `{ relative: string }`
+
+### client.coworker.world.mkdir
+
+`POST /coworker/{coworkerID}/world/mkdir` · operationId `coworker.world.mkdir`
+
+Create a world folder.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `path`       | `string` | yes      |             |
+
+Returns: `{ path: string; relative: string }`
+
+### client.coworker.world.search
+
+`GET /coworker/{coworkerID}/world/search` · operationId `coworker.world.search`
+
+Search coworker world files.
+
+| Parameter    | Type     | Required | Description |
+| ------------ | -------- | -------- | ----------- |
+| `coworkerID` | `string` | yes      |             |
+| `q`          | `string` | yes      |             |
+
+Returns: `({ relative: string; path: string; kind: "name" \| "content" })[]`
 
 ## memory
 

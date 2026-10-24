@@ -333,8 +333,23 @@ export function sessionsOf(folder: Folder) {
       (session) =>
         !session.parentID &&
         session.projectID === project.id &&
+        session.metadata?.kind !== "coworker" &&
         (project.id !== "global" || sameDir(session.directory, folder.directory)),
     )
+    .toSorted((a, b) => b.time.updated - a.time.updated)
+}
+
+/** Agent DM sessions for all-chat (metadata.kind === coworker), optionally filtered by coworker id */
+export function coworkerSessionsOf(folder: Folder, coworkerID?: string) {
+  const project = folder.project
+  if (!project) return []
+  return state.sessions.session
+    .filter((session) => {
+      if (session.parentID || session.projectID !== project.id) return false
+      if (session.metadata?.kind !== "coworker") return false
+      if (coworkerID && session.metadata?.coworkerId !== coworkerID) return false
+      return project.id !== "global" || sameDir(session.directory, folder.directory)
+    })
     .toSorted((a, b) => b.time.updated - a.time.updated)
 }
 

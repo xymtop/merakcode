@@ -2124,3 +2124,190 @@
     max-width: calc(100vw - 296px);
   }
 }
+
+/* all-chat / coworker */
+.coworker-contacts {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.coworker-contacts-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 8px;
+}
+.coworker-card {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  margin: 0 8px 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-subtle, color-mix(in srgb, currentColor 12%, transparent));
+}
+.coworker-card[data-active="true"] {
+  border-color: var(--accent, #3b82f6);
+  background: color-mix(in srgb, var(--accent, #3b82f6) 8%, transparent);
+}
+.coworker-card-main {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  padding: 8px 10px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  color: inherit;
+}
+.coworker-card-name {
+  display: block;
+  font-weight: 600;
+}
+.coworker-card-duty {
+  display: block;
+  font-size: 12px;
+  margin-top: 2px;
+}
+.coworker-card-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4px;
+}
+.coworker-home {
+  padding: 48px 32px;
+  max-width: 520px;
+}
+.coworker-detail {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.coworker-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.coworker-tab {
+  padding: 6px 12px;
+  border-radius: 6px;
+  color: inherit;
+  text-decoration: none;
+  opacity: 0.7;
+}
+.coworker-tab[aria-current="page"] {
+  opacity: 1;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+  font-weight: 600;
+}
+.coworker-world {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) 1fr;
+  flex: 1;
+  min-height: 0;
+}
+.coworker-world-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.coworker-world-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+}
+.coworker-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.coworker-search .input {
+  flex: 1;
+  min-width: 0;
+}
+.coworker-tree {
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 12px;
+}
+.coworker-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 4px 8px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.coworker-tree-row:hover,
+.coworker-tree-row[data-active="true"] {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.coworker-world-editor {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+.coworker-world-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+}
+.coworker-world-textarea {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  resize: none;
+  border: 0;
+  padding: 16px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 1.5;
+}
+.coworker-world-empty {
+  padding: 48px 24px;
+}
+.coworker-bindings {
+  padding: 16px 24px 48px;
+  max-width: 720px;
+}
+.coworker-bindings-section {
+  margin-bottom: 28px;
+}
+.coworker-bindings-section h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+.coworker-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+}
+.coworker-bindings-foot {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.coworker-bindings .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+}

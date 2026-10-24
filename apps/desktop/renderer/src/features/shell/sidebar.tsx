@@ -7,6 +7,7 @@ import LoaderCircle from "lucide-solid/icons/loader-circle"
 import MessageSquare from "lucide-solid/icons/message-square"
 import Plus from "lucide-solid/icons/plus"
 import Users from "lucide-solid/icons/users"
+import BookUser from "lucide-solid/icons/book-user"
 import Search from "lucide-solid/icons/search"
 import Settings from "lucide-solid/icons/settings"
 import ArrowUpCircle from "lucide-solid/icons/circle-arrow-up"
@@ -14,7 +15,7 @@ import { createSignal, For, Match, onCleanup, onMount, Show, Switch } from "soli
 import { A, useNavigate } from "@solidjs/router"
 import { ago, t } from "../../i18n"
 import { bridge, mac } from "../../lib/bridge"
-import { baseName, sameDir, sessionPath } from "../../lib/route"
+import { baseName, coworkerPath, sameDir, sessionPath } from "../../lib/route"
 import { call, client } from "../../state/client"
 import { closeFolder, listen, loadMore, openFolder, sessionsOf, state, statusOf, type Folder } from "../../state/store"
 import { setUi, ui } from "../../state/ui"
@@ -274,7 +275,7 @@ function UpdateNotice() {
 export function PrimaryNav(props: {
   directory?: string
   current?: string
-  active?: "messages" | "settings"
+  active?: "messages" | "settings" | "coworker"
   close?: () => void
 }) {
   const navigate = useNavigate()
@@ -306,7 +307,7 @@ export function PrimaryNav(props: {
       <div class="primary-links">
         <button
           class="primary-link"
-          aria-current={props.active !== "settings" ? "page" : undefined}
+          aria-current={props.active === "messages" || props.active === undefined ? "page" : undefined}
           disabled={!directory()}
           onClick={() => {
             leave()
@@ -318,6 +319,18 @@ export function PrimaryNav(props: {
           <span class="primary-count">
             {state.folders.reduce((count, folder) => count + sessionsOf(folder).length, 0)}
           </span>
+        </button>
+        <button
+          class="primary-link"
+          aria-current={props.active === "coworker" ? "page" : undefined}
+          disabled={!directory()}
+          onClick={() => {
+            leave()
+            if (directory()) navigate(coworkerPath(directory()!))
+          }}
+        >
+          <BookUser class="icon" />
+          <span>{t("coworker.nav")}</span>
         </button>
         <button class="primary-link" onClick={newConversation}>
           <Plus class="icon" />
