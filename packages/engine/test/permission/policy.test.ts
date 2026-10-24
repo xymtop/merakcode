@@ -177,6 +177,14 @@ describe("default decisions in the three modes", () => {
 })
 
 describe("precedence of user rules and modes", () => {
+  test("the bundled app MCP remains available when an agent denies MCP by default", () => {
+    const user: PermissionNext.Ruleset = [{ permission: "mcp", pattern: "*", action: "deny" }]
+    const bundled = PermissionPolicy.mcp("merak-apps", "topic_list")
+    const external = PermissionPolicy.mcp("github", "create_issue")
+    expect(decide("ask", bundled, user)).toBe("allow")
+    expect(decide("ask", external, user)).toBe("deny")
+  })
+
   test("ask mode: user always-allow overrides the default ask and user deny overrides the default allow", () => {
     const npmTest = PermissionPolicy.command({ command: "npm test", level: "normal", prefix: "npm test" })
     const user = PermissionNext.fromConfig({ bash: { "npm test*": "allow" }, edit: { "*.lock": "deny" } })

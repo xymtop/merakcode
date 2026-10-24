@@ -28,7 +28,7 @@ export namespace CoworkerSync {
     for (const name of bindings.skills) {
       if (name.trim()) skill[name.trim()] = "allow"
     }
-    const mcp: Record<string, "allow" | "deny"> = { "*": "deny" }
+    const mcp: Record<string, "allow" | "deny"> = { "*": "deny", "merak-apps": "allow" }
     for (const name of bindings.mcp) {
       if (name.trim()) mcp[name.trim()] = "allow"
     }

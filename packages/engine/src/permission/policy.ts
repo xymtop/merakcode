@@ -145,7 +145,11 @@ export namespace PermissionPolicy {
       action: actions[mode],
     }))
     const network = NETWORK_ALLOW.map((pattern) => ({ permission: "network", pattern, action: "allow" as const }))
-    return [...defaults, ...network, ...user, ...(mode === "readonly" ? readonly() : [])]
+    // The built-in app gateway is part of the product, not a user-installed MCP server. App-level services still
+    // enforce actor participation and permissions; this rule only keeps stale coworker defaults (`mcp: * deny`) from
+    // disabling the bundled discussion app.
+    const builtInApps = [{ permission: "mcp", pattern: "merak-apps/*", action: "allow" as const }]
+    return [...defaults, ...network, ...user, ...builtInApps, ...(mode === "readonly" ? readonly() : [])]
   }
 
   /** Permission keys unavailable in read-only mode; the UI shows a read-only hint for them */

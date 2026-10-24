@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks"
 import { dynamicTool, type Tool, jsonSchema, type JSONSchema7 } from "ai"
 import { Network } from "@merakcode/util/network"
 import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js"
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
@@ -33,6 +34,7 @@ import {
   transportProvider,
   waitForBrowserCode,
 } from "./oauth"
+import { AppMCP } from "./apps"
 
 export namespace MCP {
   const log = Log.create({ service: "mcp" })
@@ -146,7 +148,12 @@ export namespace MCP {
   }
 
   // Convert MCP tool definition to AI SDK Tool type
-  async function convertMcpTool(mcpTool: MCPToolDef, client: MCPClient, timeout?: number): Promise<Tool> {
+  async function convertMcpTool(
+    mcpTool: MCPToolDef,
+    client: MCPClient,
+    timeout?: number,
+    actorID?: string,
+  ): Promise<Tool> {
     const inputSchema = mcpTool.inputSchema
 
     // Spread first, then override type to ensure it's always "object"
@@ -165,6 +172,7 @@ export namespace MCP {
           {
             name: mcpTool.name,
             arguments: (args || {}) as Record<string, unknown>,
+            ...(actorID ? { _meta: { "merakcode/actor": { type: "agent", id: actorID } } } : {}),
           },
           CallToolResultSchema,
           {
@@ -188,6 +196,7 @@ export namespace MCP {
   type ToolCache = { generation: number; tools: MCPToolDef[] }
   interface Runtime {
     clients: Record<string, MCPClient>
+    servers: Record<string, McpServer>
     status: Record<string, Status>
     toolList: Record<string, ToolCache>
     disposed: boolean
@@ -238,7 +247,7 @@ export namespace MCP {
 
   const state = Instance.state(
     async () => {
-      const s: Runtime = { clients: {}, status: {}, toolList: {}, disposed: false }
+      const s: Runtime = { clients: {}, servers: {}, status: {}, toolList: {}, disposed: false }
       runtime().current = s
       const cfg = await Config.get()
       const config = cfg.mcp ?? {}
@@ -246,6 +255,10 @@ export namespace MCP {
 
       await Promise.all(
         Object.entries(config).map(async ([key, mcp]) => {
+          if (key === AppMCP.NAME) {
+            log.warn("ignoring configured MCP server that conflicts with the built-in app server", { key })
+            return
+          }
           if (!isMcpConfigured(mcp)) {
             log.error("Ignoring MCP config entry without type", { key })
             return
@@ -269,6 +282,19 @@ export namespace MCP {
           }
         }),
       )
+      const apps = await AppMCP.create().catch((error) => {
+        log.error("failed to create built-in app MCP server", { error: String(error) })
+        return undefined
+      })
+      if (apps) {
+        const toolList = await apps.client.listTools()
+        clients[AppMCP.NAME] = apps.client
+        s.servers[AppMCP.NAME] = apps.server
+        status[AppMCP.NAME] = { status: "connected" }
+        registerNotificationHandlers(apps.client, AppMCP.NAME)
+        track(s, AppMCP.NAME, apps.client)
+        cacheTools(s, AppMCP.NAME, apps.client, { generation: 0, tools: toolList.tools })
+      }
       return s
     },
     async (state) => {
@@ -280,6 +306,13 @@ export namespace MCP {
             log.error("Failed to close MCP client", {
               error,
             })
+          }),
+        ),
+      )
+      await Promise.all(
+        Object.values(state.servers).map((server) =>
+          server.close().catch((error) => {
+            log.error("Failed to close built-in MCP server", { error })
           }),
         ),
       )
@@ -682,7 +715,7 @@ export namespace MCP {
       : { ok: true as const }
   }
 
-  export async function tools() {
+  export async function tools(actorID?: string) {
     const result: Record<string, Tool> = {}
     const s = await state()
     const cfg = await Config.get()
@@ -740,7 +773,7 @@ export namespace MCP {
         const sanitizedClientName = clientName.replace(/[^a-zA-Z0-9_-]/g, "_")
         const sanitizedToolName = mcpTool.name.replace(/[^a-zA-Z0-9_-]/g, "_")
         const id = sanitizedClientName + "_" + sanitizedToolName
-        const tool = await convertMcpTool(mcpTool, client, timeout)
+        const tool = await convertMcpTool(mcpTool, client, timeout, actorID)
         // Deferred MCP tools (as in Claude Code): only an explicit deferred:true defers a tool; otherwise it stays
         // loaded. The __deferred marker lets runner/context-view leave it out of the tools array. It is an extra
         // property rather than a change to the return type of tools(), which would affect every caller.

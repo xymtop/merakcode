@@ -40,6 +40,9 @@ import { McpRoutes } from "./routes/mcp"
 import { FileRoutes } from "./routes/file"
 import { CollaborationRoutes } from "./routes/collaboration"
 import { CoworkerRoutes } from "./routes/coworker"
+import { TopicRoutes } from "./routes/topic"
+import { ActivityRoutes } from "./routes/activity"
+import { TaskRoutes } from "./routes/task"
 import { ConfigRoutes } from "./routes/config"
 import { ExperimentalRoutes } from "./routes/experimental"
 import { ProviderRoutes } from "./routes/provider"
@@ -408,6 +411,9 @@ export namespace Server {
       .route("/session", SessionRoutes())
       .route("/collaboration", CollaborationRoutes())
       .route("/coworker", CoworkerRoutes())
+      .route("/topic", TopicRoutes())
+      .route("/activity", ActivityRoutes())
+      .route("/task", TaskRoutes())
       // Memory management (for people) must be mounted after the directory middleware: the memory directory is
       // located by Instance.worktree, which is wrong outside the Instance context.
       .route("/memory", MemoryRoutes())

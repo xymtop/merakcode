@@ -48,6 +48,7 @@ test("bindings select skills and mcp into agent permission", async () => {
       expect(agentFile).toContain("model: test/model")
       expect(agentFile).toContain("deploy")
       expect(agentFile).toContain("github")
+      expect(agentFile).toContain("merak-apps")
 
       const agent = await Agent.get(created.id)
       expect(agent?.model).toEqual({ providerID: "test", modelID: "model" })
