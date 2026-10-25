@@ -9205,6 +9205,10 @@
           "kind": {
             "type": "string"
           },
+          "scheduler": {
+            "type": "string",
+            "enum": ["owner", "pool", "dag"]
+          },
           "seats": {
             "type": "array",
             "items": {
@@ -9234,7 +9238,7 @@
             }
           }
         },
-        "required": ["sessionID", "title", "directory", "seats"],
+        "required": ["sessionID", "title", "directory", "scheduler", "seats"],
         "additionalProperties": false
       },
       "CollaborationSeat": {
@@ -9339,9 +9343,120 @@
           },
           "seq": {
             "type": "number"
+          },
+          "scheduler": {
+            "type": "string",
+            "enum": ["owner", "pool", "dag"]
+          },
+          "sop": {
+            "type": "string"
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": ["backlog", "blocked", "ready", "running", "done", "failed", "cancelled"]
+                },
+                "assignee": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "dependencies": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "paths": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "createdBy": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "type": "number"
+                },
+                "startedAt": {
+                  "type": "number"
+                },
+                "finishedAt": {
+                  "type": "number"
+                },
+                "result": {
+                  "type": "string"
+                },
+                "error": {
+                  "type": "string"
+                },
+                "depth": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "title",
+                "description",
+                "status",
+                "dependencies",
+                "paths",
+                "createdBy",
+                "createdAt",
+                "depth"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "at": {
+                  "type": "number"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": ["inform", "ask", "handoff"]
+                },
+                "text": {
+                  "type": "string"
+                },
+                "taskID": {
+                  "type": "string"
+                }
+              },
+              "required": ["id", "at", "from", "to", "kind", "text"],
+              "additionalProperties": false
+            }
           }
         },
-        "required": ["seats", "events", "results", "baseline", "seq"],
+        "required": ["seats", "events", "results", "baseline", "seq", "scheduler", "tasks", "messages"],
         "additionalProperties": false
       },
       "CoworkerBindings": {
@@ -9368,6 +9483,89 @@
         "required": ["skills", "mcp"],
         "additionalProperties": false
       },
+      "A2AInterfaceOutput": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "protocolBinding": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "string"
+          }
+        },
+        "required": ["url"],
+        "additionalProperties": false
+      },
+      "A2ASkillOutput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["id", "name"],
+        "additionalProperties": false
+      },
+      "A2ABindingOutput": {
+        "type": "object",
+        "properties": {
+          "cardUrl": {
+            "type": "string"
+          },
+          "rpcUrl": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "interfaces": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/A2AInterfaceOutput"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "type": "string"
+          },
+          "skills": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/A2ASkillOutput"
+            }
+          },
+          "authKind": {
+            "default": "none",
+            "type": "string",
+            "enum": ["none", "apiKey", "oauth2"]
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["cardUrl", "rpcUrl", "interfaces", "name", "description", "skills", "authKind"],
+        "additionalProperties": false
+      },
       "Coworker": {
         "type": "object",
         "properties": {
@@ -9388,9 +9586,111 @@
           },
           "bindings": {
             "$ref": "#/components/schemas/CoworkerBindings"
+          },
+          "runtime": {
+            "default": "local",
+            "type": "string",
+            "enum": ["local", "a2a"]
+          },
+          "a2a": {
+            "$ref": "#/components/schemas/A2ABindingOutput"
           }
         },
-        "required": ["id", "name", "duty", "profilePath", "worldPath", "bindings"],
+        "required": ["id", "name", "duty", "profilePath", "worldPath", "bindings", "runtime"],
+        "additionalProperties": false
+      },
+      "A2AInterface": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "protocolBinding": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "string"
+          }
+        },
+        "required": ["url"]
+      },
+      "A2ASkill": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": ["id", "name"]
+      },
+      "A2ABinding": {
+        "type": "object",
+        "properties": {
+          "cardUrl": {
+            "type": "string"
+          },
+          "rpcUrl": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "interfaces": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/A2AInterface"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "type": "string"
+          },
+          "skills": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/A2ASkill"
+            }
+          },
+          "authKind": {
+            "default": "none",
+            "type": "string",
+            "enum": ["none", "apiKey", "oauth2"]
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": ["cardUrl", "rpcUrl", "name"]
+      },
+      "A2AAuthStatus": {
+        "type": "object",
+        "properties": {
+          "configured": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["apiKey", "oauth2"]
+          }
+        },
+        "required": ["configured"],
         "additionalProperties": false
       },
       "CoworkerWorldNode": {
@@ -9417,6 +9717,58 @@
           }
         },
         "required": ["name", "path", "relative", "type"],
+        "additionalProperties": false
+      },
+      "A2ACardPreview": {
+        "type": "object",
+        "properties": {
+          "cardUrl": {
+            "type": "string"
+          },
+          "rpcUrl": {
+            "type": "string"
+          },
+          "protocolVersion": {
+            "type": "string"
+          },
+          "interfaces": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/A2AInterfaceOutput"
+            }
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "type": "string"
+          },
+          "skills": {
+            "default": [],
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/A2ASkillOutput"
+            }
+          },
+          "authKind": {
+            "default": "none",
+            "type": "string",
+            "enum": ["none", "apiKey", "oauth2"]
+          },
+          "version": {
+            "type": "string"
+          },
+          "capabilities": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": ["cardUrl", "rpcUrl", "interfaces", "name", "description", "skills", "authKind"],
         "additionalProperties": false
       },
       "TopicActor": {
@@ -16270,6 +16622,10 @@
                       },
                       "required": ["name", "product"]
                     }
+                  },
+                  "scheduler": {
+                    "type": "string",
+                    "enum": ["owner", "pool", "dag"]
                   }
                 },
                 "required": ["leader"]
@@ -16281,6 +16637,97 @@
           {
             "lang": "js",
             "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.create({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/sop": {
+      "get": {
+        "operationId": "collaboration.sop.list",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "List collaboration SOP templates",
+        "description": "SOP templates create a task DAG with dependencies, roles and acceptance-oriented steps.",
+        "responses": {
+          "200": {
+            "description": "SOP templates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "steps": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "title": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string"
+                            }
+                          },
+                          "required": ["title", "description"],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": ["id", "title", "description", "steps"],
+                    "additionalProperties": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.sop.list({\n  ...\n})"
           }
         ]
       }
@@ -16344,6 +16791,678 @@
           {
             "lang": "js",
             "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.get({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/schedule": {
+      "patch": {
+        "operationId": "collaboration.schedule.change",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Change a collaboration group's scheduling mode",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "scheduler": {
+                    "type": "string",
+                    "enum": ["owner", "pool", "dag"]
+                  },
+                  "sop": {
+                    "type": "string"
+                  }
+                },
+                "required": ["scheduler"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.schedule.change({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/task": {
+      "post": {
+        "operationId": "collaboration.task.add",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Add a collaboration task",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "assignee": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": ["title"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.task.add({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/task/{taskID}": {
+      "patch": {
+        "operationId": "collaboration.task.update",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "taskID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Change a collaboration task",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "dependencies": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "assignee": {
+                    "type": "string"
+                  },
+                  "role": {
+                    "type": "string"
+                  },
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["backlog", "blocked", "ready", "running", "done", "failed", "cancelled"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.task.update({\n  ...\n})"
+          }
+        ]
+      },
+      "delete": {
+        "operationId": "collaboration.task.remove",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "taskID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Remove a collaboration task",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.task.remove({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/task/{taskID}/reset": {
+      "post": {
+        "operationId": "collaboration.task.reset",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "in": "path",
+            "name": "taskID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Retry a failed or cancelled collaboration task",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.task.reset({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/task/prepare": {
+      "post": {
+        "operationId": "collaboration.task.prepare",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Prepare ready collaboration tasks",
+        "description": "Computes ready tasks and assigns unclaimed ones to the least-loaded member.",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.task.prepare({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/sop": {
+      "post": {
+        "operationId": "collaboration.sop.apply",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Apply an SOP template",
+        "description": "Compiles the SOP into tasks and dependencies in a group using DAG scheduling.",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sop": {
+                    "type": "string"
+                  }
+                },
+                "required": ["sop"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.sop.apply({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/collaboration/{sessionID}/message": {
+      "post": {
+        "operationId": "collaboration.message.add",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "sessionID",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "summary": "Send a collaboration @ message",
+        "responses": {
+          "200": {
+            "description": "Updated group",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollaborationGroup"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "type": "string"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": ["inform", "ask", "handoff"]
+                  },
+                  "text": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "taskID": {
+                    "type": "string"
+                  }
+                },
+                "required": ["from", "to", "text"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.collaboration.message.add({\n  ...\n})"
           }
         ]
       }
@@ -16718,6 +17837,10 @@
                   "id": {
                     "type": "string"
                   },
+                  "runtime": {
+                    "type": "string",
+                    "enum": ["local", "a2a"]
+                  },
                   "bindings": {
                     "type": "object",
                     "properties": {
@@ -16737,6 +17860,58 @@
                         }
                       }
                     }
+                  },
+                  "a2a": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/A2ABinding"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "url": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["url"]
+                      }
+                    ]
+                  },
+                  "auth": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "apiKey"
+                          },
+                          "key": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["type", "key"]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "oauth2"
+                          },
+                          "access": {
+                            "type": "string"
+                          },
+                          "refresh": {
+                            "type": "string"
+                          },
+                          "expires": {
+                            "type": "number"
+                          }
+                        },
+                        "required": ["type", "access"]
+                      }
+                    ]
                   }
                 },
                 "required": ["name"]
@@ -17233,6 +18408,258 @@
           {
             "lang": "js",
             "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.coworker.bindings.update({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/coworker/{coworkerID}/a2a/refresh": {
+      "post": {
+        "operationId": "coworker.a2a.refresh",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "coworkerID",
+            "required": true
+          }
+        ],
+        "summary": "Refresh A2A Agent Card",
+        "description": "Re-fetch the Agent Card and update the coworker's a2a.json snapshot.",
+        "responses": {
+          "200": {
+            "description": "Updated coworker",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Coworker"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.coworker.a2a.refresh({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/coworker/{coworkerID}/a2a/auth": {
+      "get": {
+        "operationId": "coworker.a2a.auth.status",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "coworkerID",
+            "required": true
+          }
+        ],
+        "summary": "A2A auth status",
+        "description": "Whether local credentials are configured for this A2A coworker (never returns secrets).",
+        "responses": {
+          "200": {
+            "description": "Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/A2AAuthStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "enum": [false]
+                    },
+                    "error": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "data": {}
+                  },
+                  "required": ["success", "error", "data"]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.coworker.a2a.auth.status({\n  ...\n})"
+          }
+        ]
+      },
+      "put": {
+        "operationId": "coworker.a2a.auth.set",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "coworkerID",
+            "required": true
+          }
+        ],
+        "summary": "Set A2A auth",
+        "description": "Store or clear local credentials for an A2A coworker. Secrets are never echoed back.",
+        "responses": {
+          "200": {
+            "description": "Status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/A2AAuthStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "auth": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "apiKey"
+                              },
+                              "key": {
+                                "type": "string"
+                              }
+                            },
+                            "required": ["type", "key"]
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "type": {
+                                "type": "string",
+                                "const": "oauth2"
+                              },
+                              "access": {
+                                "type": "string"
+                              },
+                              "refresh": {
+                                "type": "string"
+                              },
+                              "expires": {
+                                "type": "number"
+                              }
+                            },
+                            "required": ["type", "access"]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["auth"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.coworker.a2a.auth.set({\n  ...\n})"
           }
         ]
       }
@@ -17904,6 +19331,66 @@
           {
             "lang": "js",
             "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.coworker.world.search({\n  ...\n})"
+          }
+        ]
+      }
+    },
+    "/a2a/discover": {
+      "post": {
+        "operationId": "a2a.discover",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "directory",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "summary": "Discover an A2A Agent Card",
+        "description": "Fetch and normalize an Agent Card from a URL or domain (tries /.well-known/agent-card.json then agent.json).",
+        "responses": {
+          "200": {
+            "description": "Agent Card preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/A2ACardPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": {
+                    "type": "string"
+                  }
+                },
+                "required": ["url"]
+              }
+            }
+          }
+        },
+        "x-codeSamples": [
+          {
+            "lang": "js",
+            "source": "import { createMerakCodeClient } from \"@merakcode/sdk\n\nconst client = createMerakCodeClient()\nawait client.a2a.discover({\n  ...\n})"
           }
         ]
       }

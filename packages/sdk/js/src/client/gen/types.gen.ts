@@ -3581,6 +3581,7 @@ export type CollaborationGroupSummary = {
   title: string
   directory: string
   kind?: string
+  scheduler: "owner" | "pool" | "dag"
   seats: Array<{
     name: string
     role: string
@@ -3622,12 +3623,65 @@ export type CollaborationGroup = {
   results: Array<CollaborationResult>
   baseline: Array<string>
   seq: number
+  scheduler: "owner" | "pool" | "dag"
+  sop?: string
+  tasks: Array<{
+    id: string
+    title: string
+    description: string
+    status: "backlog" | "blocked" | "ready" | "running" | "done" | "failed" | "cancelled"
+    assignee?: string
+    role?: string
+    dependencies: Array<string>
+    paths: Array<string>
+    createdBy: string
+    createdAt: number
+    startedAt?: number
+    finishedAt?: number
+    result?: string
+    error?: string
+    depth: number
+  }>
+  messages: Array<{
+    id: string
+    at: number
+    from: string
+    to: string
+    kind: "inform" | "ask" | "handoff"
+    text: string
+    taskID?: string
+  }>
 }
 
 export type CoworkerBindings = {
   model?: string
   skills: Array<string>
   mcp: Array<string>
+}
+
+export type A2aInterfaceOutput = {
+  url: string
+  protocolBinding?: string
+  protocolVersion?: string
+}
+
+export type A2aSkillOutput = {
+  id: string
+  name: string
+  description?: string
+  tags?: Array<string>
+}
+
+export type A2aBindingOutput = {
+  cardUrl: string
+  rpcUrl: string
+  protocolVersion?: string
+  interfaces: Array<A2aInterfaceOutput>
+  name: string
+  description: string
+  skills: Array<A2aSkillOutput>
+  authKind: "none" | "apiKey" | "oauth2"
+  version?: string
 }
 
 export type Coworker = {
@@ -3637,6 +3691,38 @@ export type Coworker = {
   profilePath: string
   worldPath: string
   bindings: CoworkerBindings
+  runtime: "local" | "a2a"
+  a2a?: A2aBindingOutput
+}
+
+export type A2aInterface = {
+  url: string
+  protocolBinding?: string
+  protocolVersion?: string
+}
+
+export type A2aSkill = {
+  id: string
+  name: string
+  description?: string
+  tags?: Array<string>
+}
+
+export type A2aBinding = {
+  cardUrl: string
+  rpcUrl: string
+  protocolVersion?: string
+  interfaces?: Array<A2aInterface>
+  name: string
+  description?: string
+  skills?: Array<A2aSkill>
+  authKind?: "none" | "apiKey" | "oauth2"
+  version?: string
+}
+
+export type A2aAuthStatus = {
+  configured: boolean
+  type?: "apiKey" | "oauth2"
 }
 
 export type CoworkerWorldNode = {
@@ -3645,6 +3731,21 @@ export type CoworkerWorldNode = {
   relative: string
   type: "file" | "directory"
   children?: Array<CoworkerWorldNode>
+}
+
+export type A2aCardPreview = {
+  cardUrl: string
+  rpcUrl: string
+  protocolVersion?: string
+  interfaces: Array<A2aInterfaceOutput>
+  name: string
+  description: string
+  skills: Array<A2aSkillOutput>
+  authKind: "none" | "apiKey" | "oauth2"
+  version?: string
+  capabilities?: {
+    [key: string]: unknown
+  }
 }
 
 export type TopicActor = {
@@ -6670,6 +6771,7 @@ export type CollaborationCreateData = {
       coworkerID?: string
       product: string
     }>
+    scheduler?: "owner" | "pool" | "dag"
   }
   path?: never
   query?: {
@@ -6703,6 +6805,46 @@ export type CollaborationCreateResponses = {
 
 export type CollaborationCreateResponse = CollaborationCreateResponses[keyof CollaborationCreateResponses]
 
+export type CollaborationSopListData = {
+  body?: never
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/sop"
+}
+
+export type CollaborationSopListErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationSopListError = CollaborationSopListErrors[keyof CollaborationSopListErrors]
+
+export type CollaborationSopListResponses = {
+  /**
+   * SOP templates
+   */
+  200: Array<{
+    id: string
+    title: string
+    description: string
+    steps: Array<{
+      title: string
+      description: string
+      role?: string
+    }>
+  }>
+}
+
+export type CollaborationSopListResponse = CollaborationSopListResponses[keyof CollaborationSopListResponses]
+
 export type CollaborationGetData = {
   body?: never
   path: {
@@ -6735,6 +6877,302 @@ export type CollaborationGetResponses = {
 }
 
 export type CollaborationGetResponse = CollaborationGetResponses[keyof CollaborationGetResponses]
+
+export type CollaborationScheduleChangeData = {
+  body: {
+    scheduler: "owner" | "pool" | "dag"
+    sop?: string
+  }
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/schedule"
+}
+
+export type CollaborationScheduleChangeErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationScheduleChangeError =
+  CollaborationScheduleChangeErrors[keyof CollaborationScheduleChangeErrors]
+
+export type CollaborationScheduleChangeResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationScheduleChangeResponse =
+  CollaborationScheduleChangeResponses[keyof CollaborationScheduleChangeResponses]
+
+export type CollaborationTaskAddData = {
+  body: {
+    title: string
+    description?: string
+    dependencies?: Array<string>
+    assignee?: string
+    role?: string
+    paths?: Array<string>
+  }
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/task"
+}
+
+export type CollaborationTaskAddErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationTaskAddError = CollaborationTaskAddErrors[keyof CollaborationTaskAddErrors]
+
+export type CollaborationTaskAddResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationTaskAddResponse = CollaborationTaskAddResponses[keyof CollaborationTaskAddResponses]
+
+export type CollaborationTaskRemoveData = {
+  body?: never
+  path: {
+    sessionID: string
+    taskID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/task/{taskID}"
+}
+
+export type CollaborationTaskRemoveErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationTaskRemoveError = CollaborationTaskRemoveErrors[keyof CollaborationTaskRemoveErrors]
+
+export type CollaborationTaskRemoveResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationTaskRemoveResponse = CollaborationTaskRemoveResponses[keyof CollaborationTaskRemoveResponses]
+
+export type CollaborationTaskUpdateData = {
+  body?: {
+    title?: string
+    description?: string
+    dependencies?: Array<string>
+    assignee?: string
+    role?: string
+    paths?: Array<string>
+    status?: "backlog" | "blocked" | "ready" | "running" | "done" | "failed" | "cancelled"
+  }
+  path: {
+    sessionID: string
+    taskID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/task/{taskID}"
+}
+
+export type CollaborationTaskUpdateErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationTaskUpdateError = CollaborationTaskUpdateErrors[keyof CollaborationTaskUpdateErrors]
+
+export type CollaborationTaskUpdateResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationTaskUpdateResponse = CollaborationTaskUpdateResponses[keyof CollaborationTaskUpdateResponses]
+
+export type CollaborationTaskResetData = {
+  body?: never
+  path: {
+    sessionID: string
+    taskID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/task/{taskID}/reset"
+}
+
+export type CollaborationTaskResetErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationTaskResetError = CollaborationTaskResetErrors[keyof CollaborationTaskResetErrors]
+
+export type CollaborationTaskResetResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationTaskResetResponse = CollaborationTaskResetResponses[keyof CollaborationTaskResetResponses]
+
+export type CollaborationTaskPrepareData = {
+  body?: never
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/task/prepare"
+}
+
+export type CollaborationTaskPrepareErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationTaskPrepareError = CollaborationTaskPrepareErrors[keyof CollaborationTaskPrepareErrors]
+
+export type CollaborationTaskPrepareResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationTaskPrepareResponse =
+  CollaborationTaskPrepareResponses[keyof CollaborationTaskPrepareResponses]
+
+export type CollaborationSopApplyData = {
+  body: {
+    sop: string
+  }
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/sop"
+}
+
+export type CollaborationSopApplyErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationSopApplyError = CollaborationSopApplyErrors[keyof CollaborationSopApplyErrors]
+
+export type CollaborationSopApplyResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationSopApplyResponse = CollaborationSopApplyResponses[keyof CollaborationSopApplyResponses]
+
+export type CollaborationMessageAddData = {
+  body: {
+    from: string
+    to: string
+    kind?: "inform" | "ask" | "handoff"
+    text: string
+    taskID?: string
+  }
+  path: {
+    sessionID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/collaboration/{sessionID}/message"
+}
+
+export type CollaborationMessageAddErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+}
+
+export type CollaborationMessageAddError = CollaborationMessageAddErrors[keyof CollaborationMessageAddErrors]
+
+export type CollaborationMessageAddResponses = {
+  /**
+   * Updated group
+   */
+  200: CollaborationGroup
+}
+
+export type CollaborationMessageAddResponse = CollaborationMessageAddResponses[keyof CollaborationMessageAddResponses]
 
 export type CollaborationSeatAddData = {
   body: {
@@ -6902,11 +7340,28 @@ export type CoworkerCreateData = {
     name: string
     duty?: string
     id?: string
+    runtime?: "local" | "a2a"
     bindings?: {
       model?: string
       skills?: Array<string>
       mcp?: Array<string>
     }
+    a2a?:
+      | A2aBinding
+      | {
+          url: string
+        }
+    auth?:
+      | {
+          type: "apiKey"
+          key: string
+        }
+      | {
+          type: "oauth2"
+          access: string
+          refresh?: string
+          expires?: number
+        }
   }
   path?: never
   query?: {
@@ -7159,6 +7614,122 @@ export type CoworkerBindingsUpdateResponses = {
 }
 
 export type CoworkerBindingsUpdateResponse = CoworkerBindingsUpdateResponses[keyof CoworkerBindingsUpdateResponses]
+
+export type CoworkerA2aRefreshData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/a2a/refresh"
+}
+
+export type CoworkerA2aRefreshErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerA2aRefreshError = CoworkerA2aRefreshErrors[keyof CoworkerA2aRefreshErrors]
+
+export type CoworkerA2aRefreshResponses = {
+  /**
+   * Updated coworker
+   */
+  200: Coworker
+}
+
+export type CoworkerA2aRefreshResponse = CoworkerA2aRefreshResponses[keyof CoworkerA2aRefreshResponses]
+
+export type CoworkerA2aAuthStatusData = {
+  body?: never
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/a2a/auth"
+}
+
+export type CoworkerA2aAuthStatusErrors = {
+  /**
+   * Validation Error
+   */
+  400: {
+    success: false
+    error: Array<unknown>
+    data: unknown
+  }
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerA2aAuthStatusError = CoworkerA2aAuthStatusErrors[keyof CoworkerA2aAuthStatusErrors]
+
+export type CoworkerA2aAuthStatusResponses = {
+  /**
+   * Status
+   */
+  200: A2aAuthStatus
+}
+
+export type CoworkerA2aAuthStatusResponse = CoworkerA2aAuthStatusResponses[keyof CoworkerA2aAuthStatusResponses]
+
+export type CoworkerA2aAuthSetData = {
+  body: {
+    auth:
+      | {
+          type: "apiKey"
+          key: string
+        }
+      | {
+          type: "oauth2"
+          access: string
+          refresh?: string
+          expires?: number
+        }
+      | null
+  }
+  path: {
+    coworkerID: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/coworker/{coworkerID}/a2a/auth"
+}
+
+export type CoworkerA2aAuthSetErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+  /**
+   * Not found
+   */
+  404: ErrorResponse
+}
+
+export type CoworkerA2aAuthSetError = CoworkerA2aAuthSetErrors[keyof CoworkerA2aAuthSetErrors]
+
+export type CoworkerA2aAuthSetResponses = {
+  /**
+   * Status
+   */
+  200: A2aAuthStatus
+}
+
+export type CoworkerA2aAuthSetResponse = CoworkerA2aAuthSetResponses[keyof CoworkerA2aAuthSetResponses]
 
 export type CoworkerSyncData = {
   body?: never
@@ -7466,6 +8037,35 @@ export type CoworkerWorldSearchResponses = {
 }
 
 export type CoworkerWorldSearchResponse = CoworkerWorldSearchResponses[keyof CoworkerWorldSearchResponses]
+
+export type A2aDiscoverData = {
+  body: {
+    url: string
+  }
+  path?: never
+  query?: {
+    directory?: string
+  }
+  url: "/a2a/discover"
+}
+
+export type A2aDiscoverErrors = {
+  /**
+   * Bad request
+   */
+  400: ErrorResponse
+}
+
+export type A2aDiscoverError = A2aDiscoverErrors[keyof A2aDiscoverErrors]
+
+export type A2aDiscoverResponses = {
+  /**
+   * Agent Card preview
+   */
+  200: A2aCardPreview
+}
+
+export type A2aDiscoverResponse = A2aDiscoverResponses[keyof A2aDiscoverResponses]
 
 export type TopicListData = {
   body?: never

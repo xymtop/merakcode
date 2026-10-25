@@ -11,6 +11,9 @@ import {
   type TDataShape,
 } from "./client/index.js"
 import type {
+  A2aBinding,
+  A2aDiscoverErrors,
+  A2aDiscoverResponses,
   ActivityListErrors,
   ActivityListResponses,
   AgentPartInput,
@@ -26,7 +29,7 @@ import type {
   AssistCommitMessageResponses,
   AssistInlineEditErrors,
   AssistInlineEditResponses,
-  Auth as Auth3,
+  Auth as Auth4,
   AuthListResponses,
   AuthRemoveErrors,
   AuthRemoveResponses,
@@ -40,16 +43,34 @@ import type {
   CollaborationGetResponses,
   CollaborationListErrors,
   CollaborationListResponses,
+  CollaborationMessageAddErrors,
+  CollaborationMessageAddResponses,
   CollaborationProductChangeErrors,
   CollaborationProductChangeResponses,
   CollaborationProductsErrors,
   CollaborationProductsResponses,
+  CollaborationScheduleChangeErrors,
+  CollaborationScheduleChangeResponses,
   CollaborationSeatAddErrors,
   CollaborationSeatAddResponses,
   CollaborationSeatRemoveErrors,
   CollaborationSeatRemoveResponses,
   CollaborationSeatUpdateErrors,
   CollaborationSeatUpdateResponses,
+  CollaborationSopApplyErrors,
+  CollaborationSopApplyResponses,
+  CollaborationSopListErrors,
+  CollaborationSopListResponses,
+  CollaborationTaskAddErrors,
+  CollaborationTaskAddResponses,
+  CollaborationTaskPrepareErrors,
+  CollaborationTaskPrepareResponses,
+  CollaborationTaskRemoveErrors,
+  CollaborationTaskRemoveResponses,
+  CollaborationTaskResetErrors,
+  CollaborationTaskResetResponses,
+  CollaborationTaskUpdateErrors,
+  CollaborationTaskUpdateResponses,
   CommandListErrors,
   CommandListResponses,
   Config as Config3,
@@ -61,6 +82,12 @@ import type {
   ConfigUpdateResponses,
   ConfigWarningsErrors,
   ConfigWarningsResponses,
+  CoworkerA2aAuthSetErrors,
+  CoworkerA2aAuthSetResponses,
+  CoworkerA2aAuthStatusErrors,
+  CoworkerA2aAuthStatusResponses,
+  CoworkerA2aRefreshErrors,
+  CoworkerA2aRefreshResponses,
   CoworkerBindingsUpdateErrors,
   CoworkerBindingsUpdateResponses,
   CoworkerCreateErrors,
@@ -169,7 +196,7 @@ import type {
   MemoryReadResponses,
   MemoryRemoveErrors,
   MemoryRemoveResponses,
-  Message,
+  Message as Message2,
   MonitorGetErrors,
   MonitorGetResponses,
   MonitorListErrors,
@@ -712,7 +739,7 @@ export class Auth extends HeyApiClient {
   public set<ThrowOnError extends boolean = false>(
     parameters: {
       providerID: string
-      auth: Auth3
+      auth: Auth4
     },
     options?: Options<never, ThrowOnError>,
   ): RequestResult<AuthSetResponses, AuthSetErrors, ThrowOnError> {
@@ -2474,7 +2501,7 @@ export class Session2 extends HeyApiClient {
       directory?: string
       info: Session3
       messages: Array<{
-        info: Message
+        info: Message2
         parts: Array<Part2>
       }>
     },
@@ -2677,6 +2704,370 @@ export class Product extends HeyApiClient {
       ThrowOnError
     >({
       url: "/collaboration/product",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Sop extends HeyApiClient {
+  /**
+   * List collaboration SOP templates
+   *
+   * SOP templates create a task DAG with dependencies, roles and acceptance-oriented steps.
+   */
+  public list<ThrowOnError extends boolean = false>(
+    parameters?: {
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationSopListResponses, CollaborationSopListErrors, ThrowOnError> {
+    const params = buildClientParams([parameters], [{ args: [{ in: "query", key: "directory" }] }])
+    return (options?.client ?? this.client).get<
+      CollaborationSopListResponses,
+      CollaborationSopListErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/sop",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Apply an SOP template
+   *
+   * Compiles the SOP into tasks and dependencies in a group using DAG scheduling.
+   */
+  public apply<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+      sop: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationSopApplyResponses, CollaborationSopApplyErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "sop" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      CollaborationSopApplyResponses,
+      CollaborationSopApplyErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/sop",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Schedule extends HeyApiClient {
+  /**
+   * Change a collaboration group's scheduling mode
+   */
+  public change<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+      scheduler: "owner" | "pool" | "dag"
+      sop?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationScheduleChangeResponses, CollaborationScheduleChangeErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "scheduler" },
+            { in: "body", key: "sop" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<
+      CollaborationScheduleChangeResponses,
+      CollaborationScheduleChangeErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/schedule",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class Task extends HeyApiClient {
+  /**
+   * Add a collaboration task
+   */
+  public add<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+      title: string
+      description?: string
+      dependencies?: Array<string>
+      assignee?: string
+      role?: string
+      paths?: Array<string>
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationTaskAddResponses, CollaborationTaskAddErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "title" },
+            { in: "body", key: "description" },
+            { in: "body", key: "dependencies" },
+            { in: "body", key: "assignee" },
+            { in: "body", key: "role" },
+            { in: "body", key: "paths" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      CollaborationTaskAddResponses,
+      CollaborationTaskAddErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/task",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Remove a collaboration task
+   */
+  public remove<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      taskID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationTaskRemoveResponses, CollaborationTaskRemoveErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).delete<
+      CollaborationTaskRemoveResponses,
+      CollaborationTaskRemoveErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/task/{taskID}",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Change a collaboration task
+   */
+  public update<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      taskID: string
+      directory?: string
+      title?: string
+      description?: string
+      dependencies?: Array<string>
+      assignee?: string
+      role?: string
+      paths?: Array<string>
+      status?: "backlog" | "blocked" | "ready" | "running" | "done" | "failed" | "cancelled"
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationTaskUpdateResponses, CollaborationTaskUpdateErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "title" },
+            { in: "body", key: "description" },
+            { in: "body", key: "dependencies" },
+            { in: "body", key: "assignee" },
+            { in: "body", key: "role" },
+            { in: "body", key: "paths" },
+            { in: "body", key: "status" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).patch<
+      CollaborationTaskUpdateResponses,
+      CollaborationTaskUpdateErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/task/{taskID}",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+
+  /**
+   * Retry a failed or cancelled collaboration task
+   */
+  public reset<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      taskID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationTaskResetResponses, CollaborationTaskResetErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "path", key: "taskID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      CollaborationTaskResetResponses,
+      CollaborationTaskResetErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/task/{taskID}/reset",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Prepare ready collaboration tasks
+   *
+   * Computes ready tasks and assigns unclaimed ones to the least-loaded member.
+   */
+  public prepare<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationTaskPrepareResponses, CollaborationTaskPrepareErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      CollaborationTaskPrepareResponses,
+      CollaborationTaskPrepareErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/task/prepare",
+      ...options,
+      ...params,
+    })
+  }
+}
+
+export class Message extends HeyApiClient {
+  /**
+   * Send a collaboration @ message
+   */
+  public add<ThrowOnError extends boolean = false>(
+    parameters: {
+      sessionID: string
+      directory?: string
+      from: string
+      to: string
+      kind?: "inform" | "ask" | "handoff"
+      text: string
+      taskID?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CollaborationMessageAddResponses, CollaborationMessageAddErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "sessionID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "from" },
+            { in: "body", key: "to" },
+            { in: "body", key: "kind" },
+            { in: "body", key: "text" },
+            { in: "body", key: "taskID" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<
+      CollaborationMessageAddResponses,
+      CollaborationMessageAddErrors,
+      ThrowOnError
+    >({
+      url: "/collaboration/{sessionID}/message",
       ...options,
       ...params,
       headers: {
@@ -2914,6 +3305,7 @@ export class Collaboration extends HeyApiClient {
         coworkerID?: string
         product: string
       }>
+      scheduler?: "owner" | "pool" | "dag"
     },
     options?: Options<never, ThrowOnError>,
   ): RequestResult<CollaborationCreateResponses, CollaborationCreateErrors, ThrowOnError> {
@@ -2926,6 +3318,7 @@ export class Collaboration extends HeyApiClient {
             { in: "body", key: "title" },
             { in: "body", key: "leader" },
             { in: "body", key: "seats" },
+            { in: "body", key: "scheduler" },
           ],
         },
       ],
@@ -2975,6 +3368,26 @@ export class Collaboration extends HeyApiClient {
   private _product?: Product
   get product(): Product {
     return (this._product ??= new Product({ client: this.client }))
+  }
+
+  private _sop?: Sop
+  get sop(): Sop {
+    return (this._sop ??= new Sop({ client: this.client }))
+  }
+
+  private _schedule?: Schedule
+  get schedule(): Schedule {
+    return (this._schedule ??= new Schedule({ client: this.client }))
+  }
+
+  private _task?: Task
+  get task(): Task {
+    return (this._task ??= new Task({ client: this.client }))
+  }
+
+  private _message?: Message
+  get message(): Message {
+    return (this._message ??= new Message({ client: this.client }))
   }
 
   private _seat?: Seat
@@ -3096,6 +3509,127 @@ export class Bindings extends HeyApiClient {
         ...params.headers,
       },
     })
+  }
+}
+
+export class Auth2 extends HeyApiClient {
+  /**
+   * A2A auth status
+   *
+   * Whether local credentials are configured for this A2A coworker (never returns secrets).
+   */
+  public status<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerA2aAuthStatusResponses, CoworkerA2aAuthStatusErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).get<
+      CoworkerA2aAuthStatusResponses,
+      CoworkerA2aAuthStatusErrors,
+      ThrowOnError
+    >({
+      url: "/coworker/{coworkerID}/a2a/auth",
+      ...options,
+      ...params,
+    })
+  }
+
+  /**
+   * Set A2A auth
+   *
+   * Store or clear local credentials for an A2A coworker. Secrets are never echoed back.
+   */
+  public set<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+      auth:
+        | {
+            type: "apiKey"
+            key: string
+          }
+        | {
+            type: "oauth2"
+            access: string
+            refresh?: string
+            expires?: number
+          }
+        | null
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerA2aAuthSetResponses, CoworkerA2aAuthSetErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+            { in: "body", key: "auth" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).put<CoworkerA2aAuthSetResponses, CoworkerA2aAuthSetErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/a2a/auth",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
+  }
+}
+
+export class A2A extends HeyApiClient {
+  /**
+   * Refresh A2A Agent Card
+   *
+   * Re-fetch the Agent Card and update the coworker's a2a.json snapshot.
+   */
+  public refresh<ThrowOnError extends boolean = false>(
+    parameters: {
+      coworkerID: string
+      directory?: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<CoworkerA2aRefreshResponses, CoworkerA2aRefreshErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "path", key: "coworkerID" },
+            { in: "query", key: "directory" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<CoworkerA2aRefreshResponses, CoworkerA2aRefreshErrors, ThrowOnError>({
+      url: "/coworker/{coworkerID}/a2a/refresh",
+      ...options,
+      ...params,
+    })
+  }
+
+  private _auth?: Auth2
+  get auth(): Auth2 {
+    return (this._auth ??= new Auth2({ client: this.client }))
   }
 }
 
@@ -3365,11 +3899,28 @@ export class Coworker extends HeyApiClient {
       name: string
       duty?: string
       id?: string
+      runtime?: "local" | "a2a"
       bindings?: {
         model?: string
         skills?: Array<string>
         mcp?: Array<string>
       }
+      a2a?:
+        | A2aBinding
+        | {
+            url: string
+          }
+      auth?:
+        | {
+            type: "apiKey"
+            key: string
+          }
+        | {
+            type: "oauth2"
+            access: string
+            refresh?: string
+            expires?: number
+          }
     },
     options?: Options<never, ThrowOnError>,
   ): RequestResult<CoworkerCreateResponses, CoworkerCreateErrors, ThrowOnError> {
@@ -3382,7 +3933,10 @@ export class Coworker extends HeyApiClient {
             { in: "body", key: "name" },
             { in: "body", key: "duty" },
             { in: "body", key: "id" },
+            { in: "body", key: "runtime" },
             { in: "body", key: "bindings" },
+            { in: "body", key: "a2a" },
+            { in: "body", key: "auth" },
           ],
         },
       ],
@@ -3534,9 +4088,51 @@ export class Coworker extends HeyApiClient {
     return (this._bindings ??= new Bindings({ client: this.client }))
   }
 
+  private _a2A?: A2A
+  get a2A(): A2A {
+    return (this._a2A ??= new A2A({ client: this.client }))
+  }
+
   private _world?: World
   get world(): World {
     return (this._world ??= new World({ client: this.client }))
+  }
+}
+
+export class A2A2 extends HeyApiClient {
+  /**
+   * Discover an A2A Agent Card
+   *
+   * Fetch and normalize an Agent Card from a URL or domain (tries /.well-known/agent-card.json then agent.json).
+   */
+  public discover<ThrowOnError extends boolean = false>(
+    parameters: {
+      directory?: string
+      url: string
+    },
+    options?: Options<never, ThrowOnError>,
+  ): RequestResult<A2aDiscoverResponses, A2aDiscoverErrors, ThrowOnError> {
+    const params = buildClientParams(
+      [parameters],
+      [
+        {
+          args: [
+            { in: "query", key: "directory" },
+            { in: "body", key: "url" },
+          ],
+        },
+      ],
+    )
+    return (options?.client ?? this.client).post<A2aDiscoverResponses, A2aDiscoverErrors, ThrowOnError>({
+      url: "/a2a/discover",
+      ...options,
+      ...params,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+        ...params.headers,
+      },
+    })
   }
 }
 
@@ -3691,7 +4287,7 @@ export class Activity extends HeyApiClient {
   }
 }
 
-export class Task extends HeyApiClient {
+export class Task2 extends HeyApiClient {
   /**
    * List tasks
    */
@@ -5446,7 +6042,7 @@ export class File_ extends HeyApiClient {
   }
 }
 
-export class Auth2 extends HeyApiClient {
+export class Auth3 extends HeyApiClient {
   /**
    * Remove MCP OAuth
    *
@@ -5727,9 +6323,9 @@ export class Mcp extends HeyApiClient {
     })
   }
 
-  private _auth?: Auth2
-  get auth(): Auth2 {
-    return (this._auth ??= new Auth2({ client: this.client }))
+  private _auth?: Auth3
+  get auth(): Auth3 {
+    return (this._auth ??= new Auth3({ client: this.client }))
   }
 }
 
@@ -6500,6 +7096,11 @@ export class MerakCodeClient extends HeyApiClient {
     return (this._coworker ??= new Coworker({ client: this.client }))
   }
 
+  private _a2A?: A2A2
+  get a2A(): A2A2 {
+    return (this._a2A ??= new A2A2({ client: this.client }))
+  }
+
   private _topic?: Topic
   get topic(): Topic {
     return (this._topic ??= new Topic({ client: this.client }))
@@ -6510,9 +7111,9 @@ export class MerakCodeClient extends HeyApiClient {
     return (this._activity ??= new Activity({ client: this.client }))
   }
 
-  private _task?: Task
-  get task(): Task {
-    return (this._task ??= new Task({ client: this.client }))
+  private _task?: Task2
+  get task(): Task2 {
+    return (this._task ??= new Task2({ client: this.client }))
   }
 
   private _monitor?: Monitor
