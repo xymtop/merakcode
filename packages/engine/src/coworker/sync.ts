@@ -35,8 +35,12 @@ export namespace CoworkerSync {
     return { skill, mcp }
   }
 
-  /** Write `.merakcode/agents/<id>.md` from PROFILE + duty + bindings. */
+  /** Write `.merakcode/agents/<id>.md` from PROFILE + duty + bindings. Skip A2A coworkers. */
   export async function syncAgent(id: string) {
+    if (await Filesystem.exists(CoworkerPath.a2a(id))) {
+      await fs.rm(CoworkerPath.agentMd(id), { force: true })
+      return
+    }
     const [profile, dutyFiles, bindings] = await Promise.all([
       Filesystem.readText(CoworkerPath.profile(id)).catch(() => ""),
       readMdFiles(CoworkerPath.dutyDir(id)),
@@ -62,7 +66,7 @@ export namespace CoworkerSync {
     await Filesystem.write(CoworkerPath.agentMd(id), text)
   }
 
-  /** Replace synced `.mdc` rules for this coworker from world/02-rules. */
+  /** Replace synced `.mdc` rules for this coworker from world/02-rules. Skip A2A coworkers. */
   export async function syncRules(id: string) {
     const rulesDir = CoworkerPath.projectRulesDir()
     await fs.mkdir(rulesDir, { recursive: true })
@@ -73,6 +77,8 @@ export namespace CoworkerSync {
         await fs.rm(path.join(rulesDir, name), { force: true })
       }
     }
+
+    if (await Filesystem.exists(CoworkerPath.a2a(id))) return
 
     const lang = await Text.lang()
     const sources = await readMdFiles(CoworkerPath.rulesDir(id))

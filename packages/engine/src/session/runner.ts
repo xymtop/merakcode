@@ -71,6 +71,7 @@ import { SessionMemory } from "../session-memory/session-memory"
 import { AutoDream } from "../memory/dream/dream"
 import { Filesystem } from "@merakcode/util/filesystem"
 import { Text } from "../util/text"
+import { A2ASession } from "../a2a/session"
 
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
@@ -830,6 +831,19 @@ export namespace SessionRunner {
 
   async function runTurn(input: RunTurnInput): Promise<Message.FullMsg> {
     const { sessionID, targetUserID, abort, loopPermissionMode, maxTurns } = input
+    // A2A coworker DMs skip the local model/tool loop entirely.
+    if (await A2ASession.isA2ASession(sessionID)) {
+      SessionStatus.set(sessionID, { type: "busy" })
+      const msgs = await Message.filterCompacted(Message.stream(sessionID))
+      const target = msgs.find((msg) => msg.info.id === targetUserID)
+      if (!target || target.info.role !== "user") throw new Error("No user message found for A2A turn")
+      return A2ASession.reply({
+        sessionID,
+        user: target.info,
+        parts: target.parts,
+        abort,
+      })
+    }
     // Structured retries belong to this turn even when a later user prompt is
     // already queued. Keep that prompt outside the current model context.
     const turnUserIDs = new Set([targetUserID])
@@ -2841,6 +2855,51 @@ export namespace SessionRunner {
   async function createUserMessage(input: PromptInput, commandSource?: Message.UserInfo["commandSource"]) {
     SessionExecution.check(input.sessionID)
     const selection = await SessionExecution.wait(async () => PromptMode.resolve(input))
+    const a2aCoworker = await SessionExecution.wait(async () => {
+      if (!(await A2ASession.isA2ASession(input.sessionID))) return undefined
+      return A2ASession.coworkerForSession(input.sessionID)
+    })
+    if (a2aCoworker) {
+      const info: Message.Info = {
+        id: input.messageID ?? Identifier.ascending("message"),
+        role: "user",
+        sessionID: input.sessionID,
+        time: { created: Date.now() },
+        tools: input.tools,
+        agent: a2aCoworker.id,
+        permissionMode: selection.permissionMode,
+        metadata: input.metadata,
+        model: { providerID: "a2a", modelID: "a2a" },
+        system: input.system,
+        commandSource,
+        format: input.format,
+      }
+      using _ = defer(() => ContextAttach.clear(info.id))
+      await SessionExecution.wait(async () => RuleSession.noteUserTurn(input.sessionID, info.id))
+      const parts = await SessionExecution.wait(async () =>
+        Promise.all(
+          input.parts.map(async (part): Promise<Message.Part[]> => {
+            if (part.type === "text") {
+              return [
+                {
+                  id: Identifier.ascending("part"),
+                  messageID: info.id,
+                  sessionID: input.sessionID,
+                  type: "text",
+                  text: part.text,
+                  ...(part.synthetic ? { synthetic: true } : {}),
+                  ...(part.ignored ? { ignored: true } : {}),
+                },
+              ]
+            }
+            return []
+          }),
+        ).then((x) => x.flat()),
+      )
+      await persistPreparedUser(info, parts)
+      return { info, parts }
+    }
+
     const agent = await SessionExecution.wait(async () => Agent.get(selection.agentID))
     if (!agent) throw new Error(`Agent not found: ${selection.agentID}`)
 

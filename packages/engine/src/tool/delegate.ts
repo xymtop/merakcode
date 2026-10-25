@@ -9,6 +9,8 @@ import { Session } from "../session"
 import { Message } from "../session/message"
 import { Agent } from "../agent/agent"
 import { Coworker } from "../coworker/coworker"
+import { A2AClient } from "../a2a/client"
+import { A2AAuth } from "../a2a/auth"
 import { SessionRunner } from "../session/runner"
 import type { Group, Seat } from "../collaboration/board"
 import { changedFiles, withOwners } from "../collaboration/artifacts"
@@ -267,11 +269,14 @@ async function runMerak(
   prompt: string,
   started: (sessionID: string) => void,
 ) {
+  const coworker = seat.coworkerID ? await Coworker.get(seat.coworkerID) : undefined
+  if (coworker?.runtime === "a2a" && coworker.a2a) {
+    return runA2A(ctx, seat, coworker, prompt, started)
+  }
   const child = seat.privateSessionID ? await Session.get(seat.privateSessionID).catch(() => undefined) : undefined
   const session = child ?? (await Session.create({ parentID: ctx.sessionID, title: seat.name }))
   const parent = await Message.get({ sessionID: ctx.sessionID, messageID: ctx.messageID })
   if (parent.info.role !== "assistant") throw new Error("Not an assistant message")
-  const coworker = seat.coworkerID ? await Coworker.get(seat.coworkerID) : undefined
   const agent =
     (coworker ? await Agent.get(coworker.id) : undefined) ??
     (await Agent.get("build")) ??
@@ -301,4 +306,57 @@ async function runMerak(
   const text = textPart?.type === "text" ? textPart.text.trim() : ""
   if (!text) throw new Error(`${seat.name} returned no reply`)
   return { text, sessionID: session.id }
+}
+
+/** A2A coworker seat: send the task over JSON-RPC; keep a child session for the transcript. */
+async function runA2A(
+  ctx: { sessionID: string; messageID: string; abort: AbortSignal },
+  seat: Seat,
+  coworker: Coworker.Info,
+  prompt: string,
+  started: (sessionID: string) => void,
+) {
+  if (!coworker.a2a) throw new Error(`${seat.name} is missing A2A binding`)
+  if (coworker.a2a.authKind !== "none") {
+    const status = await A2AAuth.status(coworker.id)
+    if (!status.configured) throw new Error(`${seat.name} needs A2A authentication before it can run`)
+  }
+  const child = seat.privateSessionID ? await Session.get(seat.privateSessionID).catch(() => undefined) : undefined
+  const session =
+    child ??
+    (await Session.create({
+      parentID: ctx.sessionID,
+      title: seat.name,
+      metadata: { kind: "coworker", coworkerId: coworker.id },
+    }))
+  started(session.id)
+  const contextId =
+    typeof session.metadata?.a2aContextId === "string" ? session.metadata.a2aContextId : undefined
+  let taskId: string | undefined
+  const onAbort = () => {
+    if (!taskId || !coworker.a2a) return
+    void A2AClient.cancelTask({ binding: coworker.a2a, coworkerID: coworker.id, taskId })
+  }
+  ctx.abort.addEventListener("abort", onAbort, { once: true })
+  try {
+    const result = await A2AClient.sendMessage({
+      binding: coworker.a2a,
+      coworkerID: coworker.id,
+      text: prompt,
+      contextId,
+      signal: ctx.abort,
+    })
+    taskId = result.taskId
+    if (result.contextId && result.contextId !== contextId) {
+      await Session.update(session.id, (draft) => {
+        draft.metadata = { ...(draft.metadata ?? {}), a2aContextId: result.contextId }
+      })
+    }
+    if (ctx.abort.aborted) throw new Error(`${seat.name} was stopped`)
+    const text = result.text.trim()
+    if (!text) throw new Error(`${seat.name} returned no reply`)
+    return { text, sessionID: session.id }
+  } finally {
+    ctx.abort.removeEventListener("abort", onAbort)
+  }
 }

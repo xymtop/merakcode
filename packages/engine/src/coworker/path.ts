@@ -7,6 +7,7 @@ export namespace CoworkerPath {
   export const TRASH = ".trash"
   export const PROFILE = "PROFILE.md"
   export const BINDINGS = "bindings.json"
+  export const A2A = "a2a.json"
   export const WORLD = "world"
   export const DUTY = "01-duty"
   export const RULES = "02-rules"
@@ -32,6 +33,10 @@ export namespace CoworkerPath {
 
   export function bindings(id: string) {
     return path.join(coworkerDir(id), BINDINGS)
+  }
+
+  export function a2a(id: string) {
+    return path.join(coworkerDir(id), A2A)
   }
 
   export function worldRoot(id: string) {

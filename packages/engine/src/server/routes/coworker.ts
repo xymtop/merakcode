@@ -1,6 +1,8 @@
 import { Hono } from "hono"
 import { describeRoute, resolver } from "hono-openapi"
 import { z } from "zod"
+import { A2AAuth } from "../../a2a/auth"
+import { A2ABinding } from "../../a2a/binding"
 import { Coworker } from "../../coworker/coworker"
 import { CoworkerSync } from "../../coworker/sync"
 import { CoworkerWorld } from "../../coworker/world"
@@ -8,6 +10,16 @@ import { Text } from "../../util/text"
 import { lazy } from "../../util/lazy"
 import { errors } from "../error"
 import { validator } from "../validator"
+
+const A2AAuthBody = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("apiKey"), key: z.string() }),
+  z.object({
+    type: z.literal("oauth2"),
+    access: z.string(),
+    refresh: z.string().optional(),
+    expires: z.number().optional(),
+  }),
+])
 
 const WorldNode: z.ZodType<CoworkerWorld.Node> = z.lazy(() =>
   z
@@ -65,6 +77,7 @@ export const CoworkerRoutes = lazy(() =>
           name: z.string(),
           duty: z.string().optional(),
           id: z.string().optional(),
+          runtime: z.enum(["local", "a2a"]).optional(),
           bindings: z
             .object({
               model: z.string().optional(),
@@ -72,6 +85,8 @@ export const CoworkerRoutes = lazy(() =>
               mcp: z.array(z.string()).optional(),
             })
             .optional(),
+          a2a: z.union([A2ABinding.Info, z.object({ url: z.string() })]).optional(),
+          auth: A2AAuthBody.optional(),
         }),
       ),
       async (c) => {
@@ -229,6 +244,81 @@ export const CoworkerRoutes = lazy(() =>
       async (c) => {
         try {
           return c.json(await Coworker.setBindings(c.req.param("coworkerID"), c.req.valid("json")))
+        } catch (error) {
+          if (error instanceof Coworker.Error && error.text.en.includes("not found")) {
+            return c.json(await fail(error), 404)
+          }
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .post(
+      "/:coworkerID/a2a/refresh",
+      describeRoute({
+        summary: "Refresh A2A Agent Card",
+        description: "Re-fetch the Agent Card and update the coworker's a2a.json snapshot.",
+        operationId: "coworker.a2a.refresh",
+        responses: {
+          200: {
+            description: "Updated coworker",
+            content: { "application/json": { schema: resolver(Coworker.Info) } },
+          },
+          ...errors(400, 404),
+        },
+      }),
+      async (c) => {
+        try {
+          return c.json(await Coworker.refreshA2A(c.req.param("coworkerID")))
+        } catch (error) {
+          if (error instanceof Coworker.Error && error.text.en.includes("not found")) {
+            return c.json(await fail(error), 404)
+          }
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .get(
+      "/:coworkerID/a2a/auth",
+      describeRoute({
+        summary: "A2A auth status",
+        description: "Whether local credentials are configured for this A2A coworker (never returns secrets).",
+        operationId: "coworker.a2a.auth.status",
+        responses: {
+          200: {
+            description: "Status",
+            content: { "application/json": { schema: resolver(A2AAuth.Status) } },
+          },
+          ...errors(404),
+        },
+      }),
+      async (c) => {
+        const id = c.req.param("coworkerID")
+        const info = await Coworker.get(id)
+        if (!info) return c.json({ message: await Text.pick({ zh: "同事不存在", en: "Coworker not found" }) }, 404)
+        if (info.runtime !== "a2a") {
+          return c.json({ message: await Text.pick({ zh: "不是 A2A 智能体", en: "Not an A2A agent" }) }, 400)
+        }
+        return c.json(await A2AAuth.status(id))
+      },
+    )
+    .put(
+      "/:coworkerID/a2a/auth",
+      describeRoute({
+        summary: "Set A2A auth",
+        description: "Store or clear local credentials for an A2A coworker. Secrets are never echoed back.",
+        operationId: "coworker.a2a.auth.set",
+        responses: {
+          200: {
+            description: "Status",
+            content: { "application/json": { schema: resolver(A2AAuth.Status) } },
+          },
+          ...errors(400, 404),
+        },
+      }),
+      validator("json", z.object({ auth: A2AAuthBody.nullable() })),
+      async (c) => {
+        try {
+          return c.json(await Coworker.setA2AAuth(c.req.param("coworkerID"), c.req.valid("json").auth))
         } catch (error) {
           if (error instanceof Coworker.Error && error.text.en.includes("not found")) {
             return c.json(await fail(error), 404)

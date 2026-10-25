@@ -40,6 +40,7 @@ import { McpRoutes } from "./routes/mcp"
 import { FileRoutes } from "./routes/file"
 import { CollaborationRoutes } from "./routes/collaboration"
 import { CoworkerRoutes } from "./routes/coworker"
+import { A2ARoutes } from "./routes/a2a"
 import { TopicRoutes } from "./routes/topic"
 import { ActivityRoutes } from "./routes/activity"
 import { TaskRoutes } from "./routes/task"
@@ -420,6 +421,7 @@ export namespace Server {
       .route("/session", SessionRoutes())
       .route("/collaboration", CollaborationRoutes())
       .route("/coworker", CoworkerRoutes())
+      .route("/a2a", A2ARoutes())
       .route("/topic", TopicRoutes())
       .route("/activity", ActivityRoutes())
       .route("/task", TaskRoutes())
