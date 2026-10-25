@@ -36,7 +36,7 @@ export function Contacts(props: { directory: string }) {
     const needle = query().trim().toLocaleLowerCase()
     if (!needle) return list() ?? []
     return (list() ?? []).filter((item) =>
-      `${item.name} ${item.duty} ${item.bindings.skills.join(" ")} ${item.bindings.mcp.join(" ")}`
+      `${item.name} ${item.duty} ${item.bindings.skills.join(" ")} ${item.bindings.mcp.join(" ")} ${(item.a2a?.skills ?? []).map((skill) => skill.name).join(" ")}`
         .toLocaleLowerCase()
         .includes(needle),
     )
@@ -108,7 +108,12 @@ export function Contacts(props: { directory: string }) {
                 <button class="agent-profile" onClick={() => navigate(coworkerPath(props.directory, item.id))}>
                   <AgentAvatar id={item.id} name={item.name} size="lg" />
                   <span class="agent-profile-copy">
-                    <strong>{item.name}</strong>
+                    <strong>
+                      {item.name}
+                      <Show when={item.runtime === "a2a"}>
+                        <span class="coworker-a2a-badge">{t("coworker.a2a.badge")}</span>
+                      </Show>
+                    </strong>
                     <span>{item.duty || t("coworker.contacts.none")}</span>
                   </span>
                 </button>
@@ -121,12 +126,37 @@ export function Contacts(props: { directory: string }) {
                   </small>
                 </button>
                 <div class="agent-capabilities">
-                  <span>{item.bindings.skills.length}</span>
-                  <small>{item.bindings.skills.slice(0, 2).join(" · ") || "—"}</small>
+                  <Show
+                    when={item.runtime === "a2a"}
+                    fallback={
+                      <>
+                        <span>{item.bindings.skills.length}</span>
+                        <small>{item.bindings.skills.slice(0, 2).join(" · ") || "—"}</small>
+                      </>
+                    }
+                  >
+                    <span>{item.a2a?.skills.length ?? 0}</span>
+                    <small>
+                      {item.a2a?.skills
+                        .slice(0, 2)
+                        .map((skill) => skill.name)
+                        .join(" · ") || t("coworker.a2a.badge")}
+                    </small>
+                  </Show>
                 </div>
                 <div class="agent-capabilities">
-                  <span>{item.bindings.mcp.length}</span>
-                  <small>{item.bindings.mcp.slice(0, 2).join(" · ") || "—"}</small>
+                  <Show
+                    when={item.runtime === "a2a"}
+                    fallback={
+                      <>
+                        <span>{item.bindings.mcp.length}</span>
+                        <small>{item.bindings.mcp.slice(0, 2).join(" · ") || "—"}</small>
+                      </>
+                    }
+                  >
+                    <span>—</span>
+                    <small>{t("coworker.a2a.remote")}</small>
+                  </Show>
                 </div>
                 <div class="agent-actions">
                   <button class="button secondary sm" onClick={() => setEditing(item)}>

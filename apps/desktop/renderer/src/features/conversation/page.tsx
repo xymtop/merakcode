@@ -334,9 +334,11 @@ export function Conversation(props: {
                 <button class="agent-tab" aria-current="page" onClick={props.onOpenChat}>
                   {t("coworker.privateChat")}
                 </button>
-                <button class="agent-tab" onClick={props.onOpenWorld}>
-                  {t("coworker.world")}
-                </button>
+                <Show when={props.agent?.runtime !== "a2a"}>
+                  <button class="agent-tab" onClick={props.onOpenWorld}>
+                    {t("coworker.world")}
+                  </button>
+                </Show>
                 <button class="agent-tab" onClick={props.onOpenActivity}>
                   {t("coworker.activity")}
                 </button>

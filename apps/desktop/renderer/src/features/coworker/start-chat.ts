@@ -10,6 +10,7 @@ import { choose } from "../../state/models"
 export async function startCoworkerChat(directory: string, coworkerID: string, title?: string) {
   const coworker = await call(client(directory).coworker.get({ coworkerID }))
   const applyBindings = (sessionID: string) => {
+    if (coworker.runtime === "a2a") return
     const at = coworker.bindings.model?.indexOf("/") ?? -1
     choose(sessionID, directory, {
       model:

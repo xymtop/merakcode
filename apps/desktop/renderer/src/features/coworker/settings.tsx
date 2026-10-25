@@ -40,6 +40,12 @@ export function AgentSettings(props: {
   const [selectedSkills, setSelectedSkills] = createSignal<string[]>([])
   const [selectedMcp, setSelectedMcp] = createSignal<string[]>([])
   const [saving, setSaving] = createSignal(false)
+  const [apiKey, setApiKey] = createSignal("")
+  const a2a = () => (info() ?? props.initial)?.runtime === "a2a"
+  const [authStatus, { refetch: refetchAuth }] = createResource(
+    () => (a2a() ? { directory: props.directory, id: props.coworkerID } : undefined),
+    (key) => (key ? call(client(key.directory).coworker.a2A.auth.status({ coworkerID: key.id })) : undefined),
+  )
 
   createEffect(() => {
     const value = info() ?? props.initial
@@ -49,6 +55,7 @@ export function AgentSettings(props: {
     setModel(value.bindings.model ?? "")
     setSelectedSkills([...value.bindings.skills])
     setSelectedMcp([...value.bindings.mcp])
+    if (value.runtime === "a2a" && tab() !== "profile") setTab("profile")
   })
 
   const close = () => props.onClose()
@@ -73,16 +80,18 @@ export function AgentSettings(props: {
     }
   }
 
-  const saveProfile = () =>
-    finish(
+  const saveProfile = () => {
+    const update = call(
+      client(props.directory).coworker.update({
+        coworkerID: props.coworkerID,
+        name: name().trim() || undefined,
+        duty: duty().trim(),
+      }),
+    )
+    if (a2a()) return finish(update)
+    return finish(
       Promise.all([
-        call(
-          client(props.directory).coworker.update({
-            coworkerID: props.coworkerID,
-            name: name().trim() || undefined,
-            duty: duty().trim(),
-          }),
-        ),
+        update,
         call(
           client(props.directory).coworker.bindings.update({
             coworkerID: props.coworkerID,
@@ -90,6 +99,36 @@ export function AgentSettings(props: {
           }),
         ),
       ]),
+    )
+  }
+
+  const refreshCard = () =>
+    finish(call(client(props.directory).coworker.a2A.refresh({ coworkerID: props.coworkerID })))
+
+  const saveKey = () => {
+    const key = apiKey().trim()
+    if (!key) return
+    return finish(
+      call(
+        client(props.directory).coworker.a2A.auth.set({
+          coworkerID: props.coworkerID,
+          auth:
+            (info() ?? props.initial)?.a2a?.authKind === "oauth2"
+              ? { type: "oauth2", access: key }
+              : { type: "apiKey", key },
+        }),
+      ).then(() => {
+        setApiKey("")
+        return refetchAuth()
+      }),
+    )
+  }
+
+  const clearKey = () =>
+    finish(
+      call(client(props.directory).coworker.a2A.auth.set({ coworkerID: props.coworkerID, auth: null })).then(() =>
+        refetchAuth(),
+      ),
     )
 
   const toggle = (list: () => string[], set: (next: string[]) => void, value: string) => {
@@ -130,14 +169,16 @@ export function AgentSettings(props: {
             <Settings2 class="icon icon-sm" />
             {t("coworker.settings.profile")}
           </button>
-          <button role="tab" aria-selected={tab() === "skills"} onClick={() => setTab("skills")}>
-            <Sparkles class="icon icon-sm" />
-            {t("coworker.bindings.skills")}
-          </button>
-          <button role="tab" aria-selected={tab() === "mcp"} onClick={() => setTab("mcp")}>
-            <Plug class="icon icon-sm" />
-            {t("coworker.bindings.mcp")}
-          </button>
+          <Show when={!a2a()}>
+            <button role="tab" aria-selected={tab() === "skills"} onClick={() => setTab("skills")}>
+              <Sparkles class="icon icon-sm" />
+              {t("coworker.bindings.skills")}
+            </button>
+            <button role="tab" aria-selected={tab() === "mcp"} onClick={() => setTab("mcp")}>
+              <Plug class="icon icon-sm" />
+              {t("coworker.bindings.mcp")}
+            </button>
+          </Show>
         </div>
         <div class="agent-settings-body scroll">
           <div class="agent-settings-identity">
@@ -163,22 +204,64 @@ export function AgentSettings(props: {
                     onInput={(event) => setDuty(event.currentTarget.value)}
                   />
                 </label>
-                <label class="field">
-                  <span>{t("coworker.bindings.model")}</span>
-                  <Select
-                    class="select-field"
-                    label={t("coworker.bindings.model")}
-                    value={model() || "default"}
-                    options={[
-                      { value: "default", label: t("coworker.bindings.modelDefault") },
-                      ...available().map((item) => ({
-                        value: item.key,
-                        label: `${item.provider.name} / ${item.model.name}`,
-                      })),
-                    ]}
-                    onChange={(value) => setModel(value === "default" ? "" : value)}
-                  />
-                </label>
+                <Show when={!a2a()}>
+                  <label class="field">
+                    <span>{t("coworker.bindings.model")}</span>
+                    <Select
+                      class="select-field"
+                      label={t("coworker.bindings.model")}
+                      value={model() || "default"}
+                      options={[
+                        { value: "default", label: t("coworker.bindings.modelDefault") },
+                        ...available().map((item) => ({
+                          value: item.key,
+                          label: `${item.provider.name} / ${item.model.name}`,
+                        })),
+                      ]}
+                      onChange={(value) => setModel(value === "default" ? "" : value)}
+                    />
+                  </label>
+                </Show>
+                <Show when={a2a() && (info() ?? props.initial)?.a2a}>
+                  {(card) => (
+                    <section class="agent-settings-section">
+                      <span class="coworker-a2a-badge">{t("coworker.a2a.badge")}</span>
+                      <p class="muted">{card().cardUrl}</p>
+                      <p class="subtle">
+                        {authStatus()?.configured ? t("coworker.a2a.configured") : t("coworker.a2a.missing")}
+                      </p>
+                      <Show when={card().authKind !== "none"}>
+                        <label class="field">
+                          <span>{t("coworker.a2a.key")}</span>
+                          <input
+                            class="input"
+                            type="password"
+                            autocomplete="off"
+                            value={apiKey()}
+                            onInput={(event) => setApiKey(event.currentTarget.value)}
+                          />
+                        </label>
+                        <div class="agent-settings-actions">
+                          <button
+                            class="button secondary"
+                            disabled={saving() || !apiKey().trim()}
+                            onClick={() => void saveKey()}
+                          >
+                            {t("coworker.a2a.saveKey")}
+                          </button>
+                          <button class="button ghost" disabled={saving()} onClick={() => void clearKey()}>
+                            {t("coworker.a2a.clearKey")}
+                          </button>
+                        </div>
+                      </Show>
+                      <div class="agent-settings-actions">
+                        <button class="button secondary" disabled={saving()} onClick={() => void refreshCard()}>
+                          {t("coworker.a2a.refresh")}
+                        </button>
+                      </div>
+                    </section>
+                  )}
+                </Show>
                 <div class="agent-settings-actions">
                   <button
                     class="button primary"

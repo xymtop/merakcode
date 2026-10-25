@@ -41,6 +41,7 @@ function AgentHeader(props: { info?: Coworker; coworkerID: string }) {
 function AgentTabs(props: {
   directory: string
   coworkerID: string
+  runtime?: "local" | "a2a"
   active: "chat" | "world" | "activity" | "groups"
   onChat: () => void
 }) {
@@ -50,13 +51,15 @@ function AgentTabs(props: {
       <button class="agent-tab" aria-current={props.active === "chat" ? "page" : undefined} onClick={props.onChat}>
         {t("coworker.privateChat")}
       </button>
-      <button
-        class="agent-tab"
-        aria-current={props.active === "world" ? "page" : undefined}
-        onClick={() => navigate(coworkerPath(props.directory, props.coworkerID, "world"))}
-      >
-        {t("coworker.world")}
-      </button>
+      <Show when={props.runtime !== "a2a"}>
+        <button
+          class="agent-tab"
+          aria-current={props.active === "world" ? "page" : undefined}
+          onClick={() => navigate(coworkerPath(props.directory, props.coworkerID, "world"))}
+        >
+          {t("coworker.world")}
+        </button>
+      </Show>
       <button
         class="agent-tab"
         aria-current={props.active === "activity" ? "page" : undefined}
@@ -159,6 +162,7 @@ function CoworkerWorkspacePane(props: { directory: string; coworkerID: string; t
           <AgentTabs
             directory={props.directory}
             coworkerID={props.coworkerID}
+            runtime={info()?.runtime}
             active={props.tab === "groups" ? "groups" : props.tab === "activity" ? "activity" : "world"}
             onChat={() => void chat()}
           />
@@ -169,8 +173,11 @@ function CoworkerWorkspacePane(props: { directory: string; coworkerID: string; t
             <Match when={tab() === "activity"}>
               <AgentActivity directory={props.directory} coworkerID={props.coworkerID} />
             </Match>
-            <Match when={true}>
+            <Match when={info()?.runtime !== "a2a"}>
               <WorldEditor directory={props.directory} coworkerID={props.coworkerID} />
+            </Match>
+            <Match when={info()?.runtime === "a2a"}>
+              <div class="agent-empty">{t("coworker.a2a.remote")}</div>
             </Match>
           </Switch>
         </div>

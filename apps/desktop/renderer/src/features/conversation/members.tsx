@@ -166,7 +166,7 @@ function MemberForm(props: {
             placeholder={t("group.selectCoworker")}
             options={(props.coworkers ?? []).map((item) => ({
               value: item.id,
-              label: item.name,
+              label: item.runtime === "a2a" ? `${item.name} · A2A` : item.name,
               description: item.duty,
             }))}
           />

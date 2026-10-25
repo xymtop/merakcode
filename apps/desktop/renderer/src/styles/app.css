@@ -4207,6 +4207,39 @@
   font-size: var(--text-sm);
   line-height: 1.45;
 }
+.coworker-create-url-row {
+  display: flex;
+  gap: 8px;
+}
+.coworker-create-url-row .input {
+  flex: 1;
+}
+.coworker-create-preview {
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+.coworker-create-preview p,
+.coworker-create-preview ul {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.coworker-a2a-badge {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+}
+
 @media (max-width: 1050px) {
   .sidebar-contacts {
     width: 56px;
