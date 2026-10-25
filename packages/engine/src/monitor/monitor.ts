@@ -72,9 +72,11 @@ export namespace Monitor {
     return provided.length === expected.length && timingSafeEqual(provided, expected)
   }
 
-  export function environment(sessionID: string, server: URL) {
+  export function environment(sessionID: string, server: URL, directory: string) {
+    const endpoint = new URL(`/monitor/${encodeURIComponent(sessionID)}`, server)
+    endpoint.searchParams.set("directory", directory)
     return {
-      MERAKCODE_MONITOR_URL: new URL(`/monitor/${encodeURIComponent(sessionID)}`, server).toString(),
+      MERAKCODE_MONITOR_URL: endpoint.toString(),
       MERAKCODE_MONITOR_TOKEN: capability(sessionID),
     }
   }

@@ -94,7 +94,9 @@ test("agent bash commands receive a session-scoped monitoring endpoint and token
         },
       )
 
-      expect(prepared.shellEnv.MERAKCODE_MONITOR_URL).toContain(`/monitor/${session.id}`)
+      const monitorURL = new URL(prepared.shellEnv.MERAKCODE_MONITOR_URL)
+      expect(monitorURL.pathname).toBe(`/monitor/${session.id}`)
+      expect(monitorURL.searchParams.get("directory")).toBe(tmp.path)
       expect(Monitor.authorize(session.id, `Bearer ${prepared.shellEnv.MERAKCODE_MONITOR_TOKEN}`)).toBe(true)
       expect(Monitor.authorize("another-session", `Bearer ${prepared.shellEnv.MERAKCODE_MONITOR_TOKEN}`)).toBe(false)
     },

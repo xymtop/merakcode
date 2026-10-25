@@ -1,6 +1,7 @@
 import { Hono } from "hono"
 import { describeRoute, resolver } from "hono-openapi"
 import { z } from "zod"
+import { readableErrorText } from "@merakcode/util/error"
 import { Monitor } from "../../monitor/monitor"
 import { Text } from "../../util/text"
 import { lazy } from "../../util/lazy"
@@ -9,7 +10,7 @@ import { validator } from "../validator"
 
 async function fail(error: unknown) {
   if (error instanceof Monitor.Error) return { message: await Text.pick(error.text) }
-  if (error instanceof Error) return { message: error.message }
+  if (error instanceof Error) return { message: readableErrorText(error, error.message) }
   return { message: String(error) }
 }
 

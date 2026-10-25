@@ -94,7 +94,9 @@ export async function prepareBashCommand(
   const shellEnv = await Plugin.trigger("shell.env", { cwd, sessionID: ctx.sessionID, callID: ctx.callID }, { env: {} })
   const { Monitor } = await import("../monitor/monitor")
   const { Server } = await import("../server/server")
-  const monitorEnv: Record<string, string> = ctx.sessionID ? Monitor.environment(ctx.sessionID, Server.url()) : {}
+  const monitorEnv: Record<string, string> = ctx.sessionID
+    ? Monitor.environment(ctx.sessionID, Server.url(), Instance.directory)
+    : {}
   return {
     cwd,
     shellEnv: { ...(shellEnv.env as Record<string, string>), ...monitorEnv } as Record<string, string>,

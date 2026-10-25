@@ -1,5 +1,6 @@
 import { afterEach, expect, test } from "vitest"
 import { setLocalSecretForTest } from "@merakcode/engine/auth/local-secret"
+import { Identifier } from "@merakcode/util/id"
 import { Monitor } from "@merakcode/engine/monitor/monitor"
 import { Instance } from "@merakcode/engine/project/instance"
 import { Server } from "@merakcode/engine/server/server"
@@ -19,7 +20,7 @@ test("a session-scoped monitoring token can post a signal without the engine pas
     directory: tmp.path,
     fn: () => Session.create({ title: "monitor route" }),
   })
-  const environment = Monitor.environment(session.id, new URL("http://localhost"))
+  const environment = Monitor.environment(session.id, new URL("http://localhost"), tmp.path)
   setLocalSecretForTest("engine-password")
 
   const app = Server.App()
@@ -28,7 +29,7 @@ test("a session-scoped monitoring token can post a signal without the engine pas
     fn: async () => {
       SessionStatus.set(session.id, { type: "busy" })
       const response = await app.request(
-        `http://localhost/monitor/${encodeURIComponent(session.id)}?directory=${encodeURIComponent(tmp.path)}`,
+        environment.MERAKCODE_MONITOR_URL,
         {
           method: "POST",
           headers: {
@@ -64,11 +65,12 @@ test("a monitoring token cannot target another session", async () => {
     directory: tmp.path,
     fn: () => Promise.all([Session.create({ title: "one" }), Session.create({ title: "two" })]),
   })
-  const environment = Monitor.environment(sessions[0]!.id, new URL("http://localhost"))
+  const environment = Monitor.environment(sessions[0]!.id, new URL("http://localhost"), tmp.path)
+  const target = Monitor.environment(sessions[1]!.id, new URL("http://localhost"), tmp.path)
   setLocalSecretForTest("engine-password")
 
   const response = await Server.App().request(
-    `http://localhost/monitor/${encodeURIComponent(sessions[1]!.id)}?directory=${encodeURIComponent(tmp.path)}`,
+    target.MERAKCODE_MONITOR_URL,
     {
       method: "POST",
       headers: {
@@ -81,4 +83,22 @@ test("a monitoring token cannot target another session", async () => {
 
   expect(response.status).toBe(401)
   expect(await SessionNotification.list(sessions[1]!.id)).toEqual([])
+})
+
+test("a missing session returns a readable monitoring error", async () => {
+  await using tmp = await tmpdir({ git: true })
+  const sessionID = Identifier.ascending("session")
+  const environment = Monitor.environment(sessionID, new URL("http://localhost"), tmp.path)
+
+  const response = await Server.App().request(environment.MERAKCODE_MONITOR_URL, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${environment.MERAKCODE_MONITOR_TOKEN}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ title: "missing", message: "missing session" }),
+  })
+
+  expect(response.status).toBe(400)
+  expect(await response.json()).toEqual({ message: `Resource not found: session ${sessionID}` })
 })
