@@ -1,6 +1,7 @@
 /**
  * Decides when delegated work starts. Two jobs run at the same time only when they belong to different members and
  * their paths cannot touch the same file; otherwise the later one waits. Jobs start in the order they were admitted.
+ * What work exists in the first place belongs to the scheduling adapters, not this admission layer.
  */
 import path from "node:path"
 import { FileTime } from "../file/time"

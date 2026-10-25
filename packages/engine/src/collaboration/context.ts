@@ -17,6 +17,6 @@ export async function leaderContext(sessionID: string): Promise<{ roster: string
   const files = await changedFiles(Instance.directory, group.baseline).catch(() => [])
   return {
     roster: [leaderPrompt({ group, title: titleOf(await configuredProducts()) })],
-    state: [groupState({ todos, artifacts: withOwners(files, todos) })],
+    state: [groupState({ mode: group.scheduler, tasks: group.tasks, todos, artifacts: withOwners(files, todos) })],
   }
 }

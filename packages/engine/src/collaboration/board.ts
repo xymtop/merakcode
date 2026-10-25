@@ -4,6 +4,7 @@
  */
 
 import type { Text } from "@merakcode/util/text"
+import { Mode, normalize, type Message, type Task } from "./scheduler"
 
 export type Seat = {
   id: string
@@ -32,6 +33,13 @@ export type Group = {
   /** Paths that were already dirty when the group was created, left out of its changed files */
   baseline: string[]
   seq: number
+  /** How tasks enter execution: the leader, a shared pool, or a dependency graph */
+  scheduler: Mode
+  /** The SOP template the DAG was created from, when it came from one */
+  sop?: string
+  tasks: Task[]
+  /** Member-to-member @ messages */
+  messages: Message[]
 }
 
 export type SeatInput = { name: string; role?: string; duty?: string; coworkerID?: string }
@@ -48,13 +56,38 @@ const NOT_FOUND = { zh: "没有这个成员", en: "Seat not found" }
 const TAKEN = { zh: "已有成员叫这个名字", en: "Another member already has this name" }
 
 /** A new group: the Merak leader plus any seats named up front, announced in one system line */
-export function createGroup(leader: SeatInput, seats: (SeatInput & { product: string })[] = []): Group {
+export function createGroup(
+  leader: SeatInput,
+  seats: (SeatInput & { product: string })[] = [],
+  scheduler: Mode = Mode.Owner,
+): Group {
   assertName(leader.name)
-  const group: Group = { seats: [], events: [], results: [], baseline: [], seq: 1 }
+  const group: Group = {
+    seats: [],
+    events: [],
+    results: [],
+    baseline: [],
+    seq: 1,
+    scheduler,
+    tasks: [],
+    messages: [],
+  }
   group.seats.push({ id: next(group), ...fields(leader), product: "merak", leader: true })
   for (const seat of seats) place(group, seat)
   if (seats.length) group.events.push({ at: Date.now(), kind: "join", names: seats.map((seat) => seat.name) })
   return group
+}
+
+/** Fills fields from groups saved before scheduling modes, tasks and messages existed. */
+export function normalizeGroup(group: Group): Group {
+  return {
+    ...group,
+    ...normalize(group),
+    seats: group.seats.map((seat) => ({ ...seat })),
+    events: group.events.map((event) => ({ ...event, names: [...event.names] })),
+    results: group.results.map((item) => ({ ...item })),
+    baseline: [...group.baseline],
+  }
 }
 
 export function addSeat(group: Group, input: SeatInput & { product: string }): Group {
@@ -144,5 +177,13 @@ function clone(group: Group): Group {
     results: group.results.map((item) => ({ ...item })),
     baseline: [...group.baseline],
     seq: group.seq,
+    scheduler: group.scheduler,
+    ...(group.sop ? { sop: group.sop } : {}),
+    tasks: group.tasks.map((task) => ({
+      ...task,
+      dependencies: [...task.dependencies],
+      paths: [...task.paths],
+    })),
+    messages: group.messages.map((message) => ({ ...message })),
   }
 }

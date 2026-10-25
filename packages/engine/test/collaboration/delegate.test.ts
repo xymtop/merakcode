@@ -6,7 +6,8 @@ import { Instance } from "../../src/project/instance"
 import { Session } from "../../src/session"
 import { DelegateTool } from "../../src/tool/delegate"
 import { Todo } from "../../src/session/todo"
-import { create, leave, load, update } from "../../src/collaboration/store"
+import { addTask, create, leave, load, prepareTasks, update } from "../../src/collaboration/store"
+import { Mode } from "../../src/collaboration/scheduler"
 import { tmpdir } from "../fixture/fixture"
 
 /**
@@ -100,7 +101,7 @@ async function turn(sessionID: string, text: string, directory: string) {
 async function delegate(
   sessionID: string,
   messageID: string,
-  params: { seat: string; task: string; paths?: string[]; todo?: string },
+  params: { seat: string; task: string; taskID?: string; paths?: string[]; todo?: string },
   abort = new AbortController().signal,
 ) {
   const metadata: Record<string, unknown>[] = []
@@ -150,7 +151,11 @@ test("a member gets one English prompt on stdin: its duty, the user's words, oth
           "",
           "The leader is 小主. Other members: 小红 (Echo CLI, 产品经理).",
           "You cannot see the group chat. Everything you need is below; your earlier work is in your own session.",
-          "Do not start other members. If someone else should do something, say so at the end of your reply. The leader decides.",
+          "You can message other members. Put one message per line at the end of your reply:",
+          "- @Name: information to share",
+          "- @Name ask: a question that needs an answer",
+          "- @Name handoff: work that the other member should now own",
+          "Do not start other members yourself. The group scheduler records these messages and decides what runs next.",
           "Only change files under: src/pay/**",
           "",
           "User request:",
@@ -478,6 +483,94 @@ test("turning a product off leaves the members already using it working", async 
       await create(session.id, { leader: { name: "小主" }, seats: [{ name: "小红", product: "echo" }] })
       const messageID = await turn(session.id, "开始", tmp.path)
       expect((await delegate(session.id, messageID, { seat: "小红", task: "做" })).output).toBe("好了")
+    },
+  })
+})
+
+test("a task pool assigns ready work and records the member's result on the task", async () => {
+  await using tmp = await project({ echo: { title: "Echo CLI", reply: "登录做好了" } })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const session = await Session.create({ metadata: { group: true } })
+      await create(session.id, {
+        leader: { name: "小主" },
+        seats: [{ name: "小红", product: "echo" }],
+        scheduler: Mode.Pool,
+      })
+      await addTask(session.id, { title: "完成登录", paths: ["src/auth/**"] })
+      const task = (await load(session.id))!.tasks[0]!
+      await prepareTasks(session.id)
+      const messageID = await turn(session.id, "执行任务池", tmp.path)
+      await delegate(session.id, messageID, { seat: "小红", task: "完成登录", taskID: task.id })
+      expect((await load(session.id))!.tasks[0]).toMatchObject({
+        status: "done",
+        assignee: "小红",
+        result: "登录做好了",
+      })
+    },
+  })
+})
+
+test("a DAG refuses a blocked task and runs it after its dependency finishes", async () => {
+  await using tmp = await project({ echo: { title: "Echo CLI", reply: "好了" } })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const session = await Session.create({ metadata: { group: true } })
+      await create(session.id, {
+        leader: { name: "小主" },
+        seats: [{ name: "小红", product: "echo" }],
+        scheduler: Mode.DAG,
+      })
+      await addTask(session.id, { title: "设计" })
+      const first = (await load(session.id))!.tasks[0]!
+      await addTask(session.id, { title: "实现", dependencies: [first.id] })
+      const group = (await load(session.id))!
+      const second = group.tasks.find((task) => task.title === "实现")!
+      await prepareTasks(session.id)
+      const messageID = await turn(session.id, "执行 DAG", tmp.path)
+      await expect(
+        delegate(session.id, messageID, { seat: "小红", task: "实现", taskID: second.id }),
+      ).rejects.toThrow("not ready")
+      await delegate(session.id, messageID, { seat: "小红", task: "设计", taskID: first.id })
+      expect((await load(session.id))!.tasks.find((task) => task.id === second.id)?.status).toBe("ready")
+    },
+  })
+})
+
+test("a member can hand off work with @ and the handoff becomes a task for its recipient", async () => {
+  await using tmp = await project({
+    a: { title: "A CLI", reply: "登录做好了\n@小刚 handoff: 补登录测试" },
+    b: { title: "B CLI", reply: "测试补好了" },
+  })
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const session = await Session.create({ metadata: { group: true } })
+      await create(session.id, {
+        leader: { name: "小主" },
+        seats: [
+          { name: "小红", product: "a" },
+          { name: "小刚", product: "b" },
+        ],
+        scheduler: Mode.Pool,
+      })
+      await addTask(session.id, { title: "完成登录", assignee: "小红" })
+      const first = (await load(session.id))!.tasks[0]!
+      const messageID = await turn(session.id, "开始", tmp.path)
+      await delegate(session.id, messageID, { seat: "小红", task: first.title, taskID: first.id })
+      const group = (await load(session.id))!
+      expect(group.messages).toMatchObject([{ kind: "handoff", text: "补登录测试", taskID: first.id }])
+      expect(group.tasks).toContainEqual(
+        expect.objectContaining({
+          title: "补登录测试",
+          status: "ready",
+          assignee: "小刚",
+          createdBy: group.seats.find((seat) => seat.name === "小红")!.id,
+          depth: 1,
+        }),
+      )
     },
   })
 })

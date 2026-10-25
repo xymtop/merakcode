@@ -4,7 +4,7 @@ import { setTimeout as delay } from "node:timers/promises"
 import { Instance } from "../../src/project/instance"
 import { FileTime } from "../../src/file/time"
 import { tmpdir } from "../fixture/fixture"
-import { runAdmitted } from "../../src/collaboration/schedule"
+import { runAdmitted } from "../../src/collaboration/admission"
 
 /** Whether a Merak write to file gets in while an external member holds paths */
 async function blocked(directory: string, hold: { product: string; paths: string[] }, file: string) {

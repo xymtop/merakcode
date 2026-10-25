@@ -1,5 +1,6 @@
 /** Prompts for a group: what a member reads on stdin. Model-facing text is English; names and duties stay verbatim. */
 import type { Group, Seat } from "./board"
+import { Mode, Status, type Task } from "./scheduler"
 
 type TodoItem = { content: string; status: string }
 type Artifact = { status: string; path: string; owner?: string }
@@ -18,6 +19,7 @@ export function memberPrompt(input: {
   paths: string[]
   todos: TodoItem[]
   artifacts: Artifact[]
+  selectedTask?: Task
 }) {
   const { group, seat } = input
   const leader = group.seats.find((item) => item.leader)
@@ -31,7 +33,11 @@ export function memberPrompt(input: {
     "",
     `The leader is ${leader?.name ?? "the leader"}.${others.length ? ` Other members: ${others.map((item) => `${item.name} (${[input.title(item.product), item.role].filter(Boolean).join(", ")})`).join(", ")}.` : ""}`,
     "You cannot see the group chat. Everything you need is below; your earlier work is in your own session.",
-    "Do not start other members. If someone else should do something, say so at the end of your reply. The leader decides.",
+    "You can message other members. Put one message per line at the end of your reply:",
+    "- @Name: information to share",
+    "- @Name ask: a question that needs an answer",
+    "- @Name handoff: work that the other member should now own",
+    "Do not start other members yourself. The group scheduler records these messages and decides what runs next.",
     input.paths.length
       ? `Only change files under: ${input.paths.join(", ")}`
       : "No path boundary was given, so no one else changes files while you work.",
@@ -49,6 +55,14 @@ export function memberPrompt(input: {
     "Changed files:",
     artifactLines(input.artifacts),
     "",
+    ...(input.selectedTask
+      ? [
+          "Selected task:",
+          `${input.selectedTask.id} [${input.selectedTask.status}] ${input.selectedTask.title}`,
+          input.selectedTask.description || "No additional description.",
+          "",
+        ]
+      : []),
     "Your task:",
     input.task,
   )
@@ -71,20 +85,70 @@ export function leaderPrompt(input: { group: Group; title: (product: string) => 
     }
     lines.push(
       "Members cannot see this chat. Give each task what it needs: the goal, the results it depends on, and the paths it may change.",
-      "Independent tasks with separate paths can be delegated in the same step and run at the same time.",
-      "If one task needs another's result, delegate the first, wait for its reply, then delegate the next.",
-      "A reply may suggest work for someone else; you decide whether to do it.",
+      "Members can address each other with @ messages; those are for information and do not start work by themselves.",
     )
+    if (input.group.scheduler === Mode.Owner) {
+      lines.push(
+        "You own task decomposition and assignment. Independent tasks with separate paths can be delegated in the same step and run at the same time.",
+        "If one task needs another's result, delegate the first, wait for its reply, then delegate the next.",
+        "A reply may suggest work for someone else; you decide whether to do it.",
+      )
+    } else if (input.group.scheduler === Mode.Pool) {
+      lines.push(
+        "This group uses a task pool. The user owns the pool: do not add, remove or rewrite its tasks.",
+        "Run only tasks whose status is ready. Use the delegate tool with the task's id and the member named by assignee.",
+        "After a task finishes, continue with any other ready tasks. Stop when no ready task remains.",
+      )
+    } else {
+      lines.push(
+        "This group uses a task DAG. The user owns its tasks and dependencies: do not add, remove or rewrite them.",
+        "Run only tasks whose status is ready. A finished task unlocks its dependants automatically.",
+        "Use the delegate tool with the task's id and the member named by assignee, and continue until no ready task remains.",
+      )
+    }
   } else lines.push("No members have joined yet, so do the work yourself.")
-  lines.push(
-    "Keep the group todo current with todowrite: owner as @name, paths in parentheses. Pass the item's id to delegate.",
-  )
+  if (input.group.scheduler === Mode.Owner)
+    lines.push(
+      "Keep the group todo current with todowrite: owner as @name, paths in parentheses. Pass the item's id to delegate.",
+    )
+  if (input.group.tasks.length) lines.push("", "Group tasks:", ...taskLines(input.group.tasks))
+  if (input.group.messages.length) {
+    const names = new Map(input.group.seats.map((seat) => [seat.id, seat.name]))
+    lines.push(
+      "",
+      "Member messages:",
+      ...input.group.messages
+        .slice(-20)
+        .map(
+          (message) =>
+            `- ${names.get(message.from) ?? message.from} → ${names.get(message.to) ?? message.to} (${message.kind}): ${clip(message.text, 500)}`,
+        ),
+    )
+  }
   return lines.join("\n")
 }
 
 /** Where the group stands: the todo and the files changed so far; changes as the work goes on */
-export function groupState(input: { todos: (TodoItem & { id: string })[]; artifacts: Artifact[] }) {
+export function groupState(input: {
+  mode?: Mode
+  tasks?: Task[]
+  todos: (TodoItem & { id: string })[]
+  artifacts: Artifact[]
+}) {
   return [
+    ...(input.mode && input.mode !== Mode.Owner
+      ? [
+          "Ready tasks:",
+          (input.tasks ?? [])
+            .filter((task) => task.status === Status.Ready)
+            .map((task) => `- ${task.id}: ${task.title} → ${task.assignee ?? "unassigned"}`)
+            .join("\n") || "none",
+          "",
+          "Task board:",
+          (input.tasks ?? []).map((task) => `- [${task.status}] ${task.id} ${task.title}`).join("\n") || "none",
+          "",
+        ]
+      : []),
     "Todo:",
     input.todos
       .filter((item) => item.status !== "cancelled")
@@ -94,6 +158,14 @@ export function groupState(input: { todos: (TodoItem & { id: string })[]; artifa
     "Changed files since the group was created:",
     artifactLines(input.artifacts),
   ].join("\n")
+}
+
+function taskLines(tasks: Task[]) {
+  return tasks.slice(0, 40).map((task) => {
+    const dependencies = task.dependencies.length ? ` after ${task.dependencies.join(", ")}` : ""
+    const assignee = task.assignee ? `; assignee ${task.assignee}` : ""
+    return `- ${task.id} [${task.status}] ${task.title}${dependencies}${assignee}`
+  })
 }
 
 function role(seat: Seat) {

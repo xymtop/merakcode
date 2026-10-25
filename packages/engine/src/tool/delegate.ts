@@ -12,17 +12,27 @@ import { Coworker } from "../coworker/coworker"
 import { SessionRunner } from "../session/runner"
 import type { Group, Seat } from "../collaboration/board"
 import { changedFiles, withOwners } from "../collaboration/artifacts"
-import { runAdmitted } from "../collaboration/schedule"
+import { runAdmitted } from "../collaboration/admission"
 import { memberPrompt } from "../collaboration/prompt"
 import { configuredProducts, titleOf, type ProductSpec } from "../collaboration/run"
 import { setTodo, startTodo } from "../collaboration/todo"
-import { open, record, remember } from "../collaboration/store"
+import {
+  addMessage,
+  addTask,
+  finishTask,
+  open,
+  record,
+  remember,
+  startTask,
+} from "../collaboration/store"
 import { decide, runMember } from "../collaboration/member"
 import { adapterOf } from "../collaboration/adapters"
 import { Question } from "../question"
+import { MAX_HANDOFF_DEPTH, Mode, mentions, type Task } from "../collaboration/scheduler"
 
 const DESCRIPTION = [
   "Give one member of this group chat a task. Use the member's exact name.",
+  "For pool and DAG scheduling, pass the task id as taskID; the member must match its assignee.",
   "The member cannot see the chat: write the task so it can be done from the task alone, with the results it needs and the paths it may change.",
   "Members whose paths do not overlap can be delegated in the same step and run at the same time.",
   "If a task needs another member's result, delegate that one first and wait for its reply.",
@@ -44,6 +54,7 @@ type Metadata = {
   started?: number
   sessionId?: string
   missing?: boolean
+  taskID?: string
   /** What an external member has done so far, for the chat only; never part of a prompt */
   steps?: Step[]
 }
@@ -53,6 +64,10 @@ export const DelegateTool = Tool.define("delegate", {
   parameters: z.object({
     seat: z.string().describe("The member's name, for example 小红"),
     task: z.string().describe("What the member should do now, complete enough to do without the chat"),
+    taskID: z
+      .string()
+      .optional()
+      .describe("Task id from a pool or DAG group; required in those scheduling modes and unnecessary for owner scheduling"),
     paths: z.array(z.string()).optional().describe("Files or directories the member may change, such as src/auth/**"),
     todo: z
       .string()
@@ -64,8 +79,15 @@ export const DelegateTool = Tool.define("delegate", {
     const seat = group.seats.find((item) => item.name === params.seat)
     if (!seat) throw new Error(`No member is named ${params.seat}. Members: ${names(group)}`)
     if (seat.leader) throw new Error("You are the leader; do this work yourself instead of delegating it")
-    const paths = params.paths ?? []
-    const metadata: Metadata = { seatID: seat.id, product: seat.product }
+    const selected = selectedTask(group, params.taskID)
+    if (group.scheduler !== Mode.Owner && !selected)
+      throw new Error(`Scheduling mode ${group.scheduler} requires a task id`)
+    if (selected?.assignee && selected.assignee !== seat.name)
+      throw new Error(`Task ${selected.id} is assigned to ${selected.assignee}, not ${seat.name}`)
+    if (selected && selected.status !== "ready")
+      throw new Error(`Task ${selected.id} is not ready (${selected.status})`)
+    const paths = selected?.paths.length ? selected.paths : (params.paths ?? [])
+    const metadata: Metadata = { seatID: seat.id, product: seat.product, ...(selected ? { taskID: selected.id } : {}) }
     ctx.metadata({ title: seat.name, metadata: { ...metadata, phase: "queued" } })
     const request = await userRequest(ctx.sessionID, ctx.messageID)
     const products = await configuredProducts()
@@ -74,7 +96,13 @@ export const DelegateTool = Tool.define("delegate", {
       metadata.started = Date.now()
       ctx.metadata({ title: seat.name, metadata })
       const steps: Step[] = []
-      const todo = await startTodo(ctx.sessionID, { id: params.todo, seat: seat.name, task: params.task, paths })
+      const taskText = selected ? taskTextOf(selected) : params.task
+      if (!taskText) throw new Error("The task description is empty")
+      if (selected) await startTask(ctx.sessionID, selected.id, seat.name)
+      const todo =
+        group.scheduler === Mode.Owner
+          ? await startTodo(ctx.sessionID, { id: params.todo, seat: seat.name, task: taskText, paths })
+          : undefined
       try {
         // Built only now, so a member that waited sees the results that came in meanwhile
         const latest = await open(ctx.sessionID)
@@ -86,10 +114,11 @@ export const DelegateTool = Tool.define("delegate", {
           seat: current,
           title,
           request,
-          task: params.task,
+          task: taskText,
           paths,
           todos,
           artifacts: withOwners(files, todos),
+          selectedTask: selected,
         })
         const product = products.find((item) => item.id === current.product)
         const onStep = (step: Step) => {
@@ -104,12 +133,15 @@ export const DelegateTool = Tool.define("delegate", {
               )
             : await runAdapter(ctx, product, current, prompt, onStep)
         if (output.missing) {
-          await setTodo(ctx.sessionID, todo, "pending")
+          if (todo) await setTodo(ctx.sessionID, todo, "pending")
+          if (selected) await finishTask(ctx.sessionID, selected.id, { error: output.text })
           return { title: seat.name, output: output.text, metadata: { ...metadata, missing: true } as Metadata }
         }
         await record(ctx.sessionID, { seatID: seat.id, name: current.name, text: output.text, requestID: request.id })
+        if (selected) await finishTask(ctx.sessionID, selected.id, { result: output.text })
+        await relay(ctx.sessionID, latest, current, output.text, selected)
         if (output.sessionID) await remember(ctx.sessionID, seat.id, output.sessionID)
-        await setTodo(ctx.sessionID, todo, "completed")
+        if (todo) await setTodo(ctx.sessionID, todo, "completed")
         // A MerakCode member keeps its child session id, so the chat can open its steps
         const sessionId = current.product === "merak" ? output.sessionID : undefined
         return {
@@ -118,12 +150,48 @@ export const DelegateTool = Tool.define("delegate", {
           metadata: { ...metadata, sessionId, ...(steps.length ? { steps } : {}) } as Metadata,
         }
       } catch (error) {
-        await setTodo(ctx.sessionID, todo, ctx.abort.aborted ? "cancelled" : "pending").catch(() => undefined)
+        if (todo) await setTodo(ctx.sessionID, todo, ctx.abort.aborted ? "cancelled" : "pending").catch(() => undefined)
+        if (selected)
+          await finishTask(ctx.sessionID, selected.id, { error: error instanceof Error ? error.message : String(error) })
         throw error
       }
     })
   },
 })
+
+function selectedTask(group: Group, id?: string) {
+  if (!id) return undefined
+  const task = group.tasks.find((item) => item.id === id)
+  if (!task) throw new Error(`Task not found: ${id}`)
+  return task
+}
+
+function taskTextOf(task: Task) {
+  return [task.title, task.description].filter(Boolean).join("\n\n")
+}
+
+/** Stores member @ messages. In pool and DAG modes a handoff also creates a ready task for its recipient. */
+async function relay(sessionID: string, group: Group, from: Seat, text: string, source?: Task) {
+  const found = mentions({ text, from: from.id, seats: group.seats, taskID: source?.id })
+  for (const message of found) {
+    await addMessage(sessionID, message, Date.now())
+    if (message.kind !== "handoff" || group.scheduler === Mode.Owner) continue
+    if ((source?.depth ?? 0) >= MAX_HANDOFF_DEPTH) continue
+    const target = group.seats.find((seat) => seat.id === message.to)
+    if (!target) continue
+    await addTask(
+      sessionID,
+      {
+        title: message.text,
+        description: `Handoff from ${from.name}${source ? ` while working on "${source.title}"` : ""}.`,
+        assignee: target.name,
+        paths: source?.paths ?? [],
+      },
+      from.id,
+      (source?.depth ?? 0) + 1,
+    )
+  }
+}
 
 function names(group: Group) {
   return group.seats

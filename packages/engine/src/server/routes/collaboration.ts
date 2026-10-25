@@ -9,8 +9,24 @@ import { GroupError, createGroup } from "../../collaboration/board"
 import { Text } from "../../util/text"
 import { porcelain } from "../../collaboration/artifacts"
 import { BUILTIN_PRODUCTS, configuredProducts, probe, productSources } from "../../collaboration/run"
-import { all, create, join, leave, load, update } from "../../collaboration/store"
+import {
+  addMessage,
+  addTask,
+  all,
+  applySop,
+  changeTask,
+  create,
+  join,
+  leave,
+  load,
+  prepareTasks,
+  removeTask,
+  resetTask,
+  schedule,
+  update,
+} from "../../collaboration/store"
 import { ProductChange, changeProduct } from "../../collaboration/product-config"
+import { MODES, SOPS, STATUSES } from "../../collaboration/scheduler"
 
 const Seat = z
   .object({
@@ -50,6 +66,38 @@ const Group = z
     results: Result.array(),
     baseline: z.string().array(),
     seq: z.number(),
+    scheduler: z.enum(MODES),
+    sop: z.string().optional(),
+    tasks: z.array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        description: z.string(),
+        status: z.enum(STATUSES),
+        assignee: z.string().optional(),
+        role: z.string().optional(),
+        dependencies: z.string().array(),
+        paths: z.string().array(),
+        createdBy: z.string(),
+        createdAt: z.number(),
+        startedAt: z.number().optional(),
+        finishedAt: z.number().optional(),
+        result: z.string().optional(),
+        error: z.string().optional(),
+        depth: z.number(),
+      }),
+    ),
+    messages: z.array(
+      z.object({
+        id: z.string(),
+        at: z.number(),
+        from: z.string(),
+        to: z.string(),
+        kind: z.enum(["inform", "ask", "handoff"]),
+        text: z.string(),
+        taskID: z.string().optional(),
+      }),
+    ),
   })
   .meta({ ref: "CollaborationGroup" })
 
@@ -61,6 +109,7 @@ const GroupSummary = z
     directory: z.string(),
     /** Optional app kind, such as "topic". Ordinary collaboration groups have none. */
     kind: z.string().optional(),
+    scheduler: z.enum(MODES),
     seats: Seat.omit({ id: true, privateSessionID: true }).array(),
   })
   .meta({ ref: "CollaborationGroupSummary" })
@@ -105,8 +154,28 @@ const SeatInput = z.object({
   coworkerID: z.string().optional().describe("Saved coworker this seat represents"),
 })
 
+const TaskInput = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  dependencies: z.string().array().optional(),
+  assignee: z.string().optional(),
+  role: z.string().optional(),
+  paths: z.string().array().optional(),
+})
+
+const TaskPatch = TaskInput.partial().extend({
+  status: z.enum(STATUSES).optional(),
+})
+
 async function fail(error: unknown) {
   if (error instanceof GroupError) return { message: await Text.pick(error.text) }
+  if (error instanceof Error)
+    return {
+      message: await Text.pick({
+        zh: `任务操作失败：${error.message}`,
+        en: `Task operation failed: ${error.message}`,
+      }),
+    }
   throw error
 }
 
@@ -234,6 +303,7 @@ export const CollaborationRoutes = lazy(() =>
             title: session.title,
             directory: session.directory,
             kind: typeof session.metadata?.kind === "string" ? session.metadata.kind : undefined,
+            scheduler: group.scheduler,
             seats: group.seats.map(({ name, role, duty, product, coworkerID, leader }) => ({
               name,
               role,
@@ -268,6 +338,7 @@ export const CollaborationRoutes = lazy(() =>
           title: z.string().optional(),
           leader: SeatInput,
           seats: SeatInput.extend({ product: z.string() }).array().optional(),
+          scheduler: z.enum(MODES).optional(),
         }),
       ),
       async (c) => {
@@ -277,19 +348,57 @@ export const CollaborationRoutes = lazy(() =>
         if (missing.length) return c.json({ message: await notConnected(missing) }, 400)
         try {
           // Validate before the session exists, so a bad seat leaves nothing behind
-          createGroup(body.leader, seats)
+          createGroup(body.leader, seats, body.scheduler)
           const baseline = await porcelain(Instance.directory).catch(() => [])
           const title = body.title?.trim() || [body.leader, ...seats].map((seat) => seat.name).join("、")
           const session = await Session.create({ title, metadata: { group: true } })
           const group = await create(
             session.id,
-            { leader: body.leader, seats },
+            { leader: body.leader, seats, scheduler: body.scheduler },
             baseline.map((file) => file.path),
           )
           return c.json({ sessionID: session.id, group })
         } catch (error) {
           return c.json(await fail(error), 400)
         }
+      },
+    )
+    .get(
+      "/sop",
+      describeRoute({
+        summary: "List collaboration SOP templates",
+        description: "SOP templates create a task DAG with dependencies, roles and acceptance-oriented steps.",
+        operationId: "collaboration.sop.list",
+        responses: {
+          200: {
+            description: "SOP templates",
+            content: {
+              "application/json": {
+                schema: resolver(
+                  z.array(
+                    z.object({
+                      id: z.string(),
+                      title: z.string(),
+                      description: z.string(),
+                      steps: z.array(z.object({ title: z.string(), description: z.string(), role: z.string().optional() })),
+                    }),
+                  ),
+                ),
+              },
+            },
+          },
+        },
+      }),
+      async (c) => {
+        const lang = await Text.lang()
+        return c.json(
+          SOPS.map((sop) => ({
+            id: sop.id,
+            title: sop.title[lang],
+            description: sop.description[lang],
+            steps: sop.steps.map((step) => ({ title: step.title[lang], description: step.description[lang], role: step.role })),
+          })),
+        )
       },
     )
     .get(
@@ -309,6 +418,203 @@ export const CollaborationRoutes = lazy(() =>
         const group = await load(c.req.valid("param").sessionID)
         if (!group) return c.json({ message: await Text.pick({ zh: "没有这个群", en: "Group not found" }) }, 404)
         return c.json(group)
+      },
+    )
+    .patch(
+      "/:sessionID/schedule",
+      describeRoute({
+        summary: "Change a collaboration group's scheduling mode",
+        operationId: "collaboration.schedule.change",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string() })),
+      validator("json", z.object({ scheduler: z.enum(MODES), sop: z.string().optional() })),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const body = c.req.valid("json")
+        try {
+          return c.json(await schedule(sessionID, body.scheduler, body.sop))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .post(
+      "/:sessionID/task",
+      describeRoute({
+        summary: "Add a collaboration task",
+        operationId: "collaboration.task.add",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string() })),
+      validator("json", TaskInput),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        try {
+          return c.json(await addTask(sessionID, c.req.valid("json")))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .patch(
+      "/:sessionID/task/:taskID",
+      describeRoute({
+        summary: "Change a collaboration task",
+        operationId: "collaboration.task.update",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string(), taskID: z.string() })),
+      validator("json", TaskPatch),
+      async (c) => {
+        const { sessionID, taskID } = c.req.valid("param")
+        try {
+          return c.json(await changeTask(sessionID, taskID, c.req.valid("json")))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .delete(
+      "/:sessionID/task/:taskID",
+      describeRoute({
+        summary: "Remove a collaboration task",
+        operationId: "collaboration.task.remove",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string(), taskID: z.string() })),
+      async (c) => {
+        const { sessionID, taskID } = c.req.valid("param")
+        try {
+          return c.json(await removeTask(sessionID, taskID))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .post(
+      "/:sessionID/task/:taskID/reset",
+      describeRoute({
+        summary: "Retry a failed or cancelled collaboration task",
+        operationId: "collaboration.task.reset",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string(), taskID: z.string() })),
+      async (c) => {
+        const { sessionID, taskID } = c.req.valid("param")
+        try {
+          return c.json(await resetTask(sessionID, taskID))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .post(
+      "/:sessionID/task/prepare",
+      describeRoute({
+        summary: "Prepare ready collaboration tasks",
+        description: "Computes ready tasks and assigns unclaimed ones to the least-loaded member.",
+        operationId: "collaboration.task.prepare",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string() })),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        try {
+          return c.json(await prepareTasks(sessionID))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .post(
+      "/:sessionID/sop",
+      describeRoute({
+        summary: "Apply an SOP template",
+        description: "Compiles the SOP into tasks and dependencies in a group using DAG scheduling.",
+        operationId: "collaboration.sop.apply",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string() })),
+      validator("json", z.object({ sop: z.string() })),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const found = SOPS.find((item) => item.id === c.req.valid("json").sop)
+        if (!found)
+          return c.json({ message: await Text.pick({ zh: "没有这个 SOP 模板", en: "SOP template not found" }) }, 404)
+        try {
+          return c.json(await applySop(sessionID, found))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
+      },
+    )
+    .post(
+      "/:sessionID/message",
+      describeRoute({
+        summary: "Send a collaboration @ message",
+        operationId: "collaboration.message.add",
+        responses: {
+          200: {
+            description: "Updated group",
+            content: { "application/json": { schema: resolver(Group) } },
+          },
+        },
+      }),
+      validator("param", z.object({ sessionID: z.string() })),
+      validator(
+        "json",
+        z.object({
+          from: z.string(),
+          to: z.string(),
+          kind: z.enum(["inform", "ask", "handoff"]).optional(),
+          text: z.string().min(1),
+          taskID: z.string().optional(),
+        }),
+      ),
+      async (c) => {
+        const { sessionID } = c.req.valid("param")
+        const input = c.req.valid("json")
+        try {
+          return c.json(await addMessage(sessionID, { ...input, kind: input.kind ?? "inform" }))
+        } catch (error) {
+          return c.json(await fail(error), 400)
+        }
       },
     )
     .post(

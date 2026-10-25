@@ -119,12 +119,14 @@ test("groups of every project can be listed to copy, newest first, without anyon
           sessionID: made[1],
           title: "支付小组",
           directory: a.path,
+          scheduler: "owner",
           seats: [{ name: "老大", role: "", duty: "", product: "merak", leader: true }],
         },
         {
           sessionID: made[0],
           title: "登录小组",
           directory: a.path,
+          scheduler: "owner",
           seats: [
             { name: "小主", role: "", duty: "带队", product: "merak", leader: true },
             {
@@ -138,6 +140,70 @@ test("groups of every project can be listed to copy, newest first, without anyon
           ],
         },
       ])
+    },
+  })
+})
+
+test("DAG groups build tasks from an SOP, prepare assignments and expose member messages", async () => {
+  await using tmp = await tmpdir()
+  await Instance.provide({
+    directory: tmp.path,
+    fn: async () => {
+      const app = Server.App()
+      const created = await post(app, tmp.path, {
+        leader: { name: "小主" },
+        seats: [
+          { name: "小红", product: "merak" },
+          { name: "小刚", product: "merak" },
+        ],
+        scheduler: "dag",
+      })
+      expect(created.status).toBe(200)
+      const sessionID = created.body.sessionID as string
+      const query = `?directory=${encodeURIComponent(tmp.path)}`
+
+      const templates = await app.request(`/collaboration/sop${query}`)
+      expect(templates.status).toBe(200)
+      expect((await templates.json()) as unknown[]).toHaveLength(3)
+
+      const applied = await app.request(`/collaboration/${sessionID}/sop${query}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ sop: "feature" }),
+      })
+      expect(applied.status).toBe(200)
+      const compiled = (await applied.json()) as {
+        scheduler: string
+        sop: string
+        tasks: { id: string; status: string; dependencies: string[] }[]
+      }
+      expect(compiled.scheduler).toBe("dag")
+      expect(compiled.sop).toBe("feature")
+      expect(compiled.tasks.map((task) => task.status)).toEqual(["ready", "blocked", "blocked", "blocked"])
+      expect(compiled.tasks[1]!.dependencies).toEqual([compiled.tasks[0]!.id])
+
+      const prepared = await app.request(`/collaboration/${sessionID}/task/prepare${query}`, { method: "POST" })
+      expect(prepared.status).toBe(200)
+      const assigned = (await prepared.json()) as { tasks: { status: string; assignee?: string }[] }
+      expect(assigned.tasks.find((task) => task.status === "ready")?.assignee).toBeTruthy()
+
+      const messaged = await app.request(`/collaboration/${sessionID}/message${query}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ from: "s2", to: "s3", kind: "ask", text: "接口字段确认了吗？" }),
+      })
+      expect(messaged.status).toBe(200)
+      expect((await messaged.json()) as { messages: { text: string }[] }).toMatchObject({
+        messages: [{ text: "接口字段确认了吗？" }],
+      })
+
+      const switched = await app.request(`/collaboration/${sessionID}/schedule${query}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ scheduler: "pool" }),
+      })
+      expect(switched.status).toBe(200)
+      expect((await switched.json()) as { scheduler: string }).toMatchObject({ scheduler: "pool" })
     },
   })
 })
