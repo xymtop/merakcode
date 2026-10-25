@@ -2234,6 +2234,206 @@
   color: var(--success);
 }
 
+/* Task pool and DAG above the group chat */
+.group-schedule {
+  flex: none;
+  padding: 14px 36px 0;
+}
+.group-schedule-card {
+  max-width: var(--content-width);
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+.group-schedule-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 8px 6px 12px;
+}
+.group-schedule-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.group-schedule-toggle[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+.group-schedule-empty {
+  margin: 0;
+  padding: 0 14px 13px 34px;
+}
+.group-schedule-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 280px);
+  gap: 12px;
+  max-height: 310px;
+  padding: 0 10px 10px;
+  overflow: auto;
+}
+.group-task-list {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+.group-task {
+  min-width: 0;
+  padding: 8px 9px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.group-task[data-status="running"] {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.group-task[data-status="failed"] {
+  border-color: color-mix(in srgb, var(--danger) 38%, var(--border));
+}
+.group-task-main {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.group-task-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.group-task-status {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: var(--radius-full);
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.group-task-status[data-status="ready"] {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.group-task-status[data-status="running"] {
+  background: var(--warning-soft);
+  color: var(--warning-text);
+}
+.group-task-status[data-status="done"] {
+  background: var(--success-soft);
+  color: var(--success-text);
+}
+.group-task-status[data-status="failed"] {
+  background: var(--danger-soft);
+  color: var(--danger-text);
+}
+.group-task-description {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+}
+.group-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 5px;
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+.group-task-error {
+  margin: 6px 0 0;
+  color: var(--danger-text);
+  font-size: var(--text-sm);
+}
+.group-task-result {
+  margin-top: 6px;
+  font-size: var(--text-sm);
+}
+.group-task-result summary {
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.group-task-result p {
+  margin: 5px 0 0;
+  color: var(--text-muted);
+  white-space: pre-wrap;
+}
+.group-messages {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-width: 0;
+  padding: 8px;
+  border-left: 1px solid var(--border);
+}
+.group-messages-title {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.group-message {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 7px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-size: var(--text-sm);
+}
+.group-message[data-kind="handoff"] {
+  background: var(--accent-soft);
+}
+.group-message-route {
+  display: flex;
+  gap: 4px;
+  color: var(--accent-text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.group-task-editor textarea.input {
+  height: auto;
+  padding: 8px 11px;
+  resize: vertical;
+}
+.group-task-deps {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.group-task-deps legend {
+  padding: 0 4px;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+.group-task-dep {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+.group-task-dep .subtle {
+  margin-left: auto;
+  font-size: var(--text-xs);
+}
+.group-create-hint {
+  margin: -2px 0 2px;
+  font-size: var(--text-sm);
+}
+
 @media (prefers-color-scheme: dark) {
   .avatar {
     color: hsl(var(--hue) 80% 85%);
@@ -4007,7 +4207,6 @@
   font-size: var(--text-sm);
   line-height: 1.45;
 }
-
 @media (max-width: 1050px) {
   .sidebar-contacts {
     width: 56px;

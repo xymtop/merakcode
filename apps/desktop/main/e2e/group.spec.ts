@@ -157,6 +157,49 @@ test.describe("group members", () => {
   })
 })
 
+test.describe("task pool scheduling", () => {
+  test.use({
+    config: { collaboration: { products: { fake } } },
+    script: {
+      reply: ({ prompt, toolResults }) => {
+        if (prompt.startsWith("You are 小红")) return { text: "登录入口已改到 src/auth/login.ts" }
+        const taskID = /- ([^\s]+) \[ready\] 做登录/.exec(prompt)?.[1]
+        if (!taskID) return { text: "没有就绪任务" }
+        if (toolResults.length) return { text: "任务池已清空" }
+        return { tool: "delegate", args: { seat: "小红", task: "做登录", taskID } }
+      },
+    },
+  })
+
+  test("a user fills the pool, runs ready work and the Scheduler records the result", async ({ kit }) => {
+    const { page } = kit
+    await page.getByRole("button", { name: "新建协作群" }).click()
+    const create = page.getByRole("dialog", { name: "新建协作群" })
+    await create.getByRole("button", { name: "任务池" }).click()
+    await create.getByRole("button", { name: "添加成员" }).click()
+    await create.getByRole("button", { name: /^产品/ }).click()
+    await page.getByRole("option", { name: /Fake CLI/ }).click()
+    await create.getByRole("textbox", { name: "姓名" }).fill("小红")
+    await create.getByRole("button", { name: "加入" }).click()
+    await create.getByRole("button", { name: "创建" }).click()
+
+    const schedule = page.getByRole("region", { name: "群任务" })
+    await expect(schedule).toBeVisible()
+    await schedule.getByRole("button", { name: "添加任务" }).click()
+    const editor = page.getByRole("dialog", { name: "添加任务" })
+    await editor.getByRole("textbox", { name: "任务标题" }).fill("做登录")
+    await editor.getByRole("textbox", { name: "允许修改的路径" }).fill("src/auth/**")
+    await editor.getByRole("button", { name: "保存任务" }).click()
+
+    const task = schedule.getByRole("article").filter({ hasText: "做登录" })
+    await expect(task).toContainText("就绪")
+    await expect(task).toContainText("小红")
+    await schedule.getByRole("button", { name: "运行就绪任务" }).click()
+    await expect(task).toContainText("完成", { timeout: 60_000 })
+    await expect(task).toContainText("登录入口已改到 src/auth/login.ts")
+  })
+})
+
 test.describe("a MerakCode member", () => {
   test.use({
     script: {

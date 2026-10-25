@@ -34,6 +34,9 @@ const group: CollaborationGroup = {
   results: [],
   baseline: [],
   seq: 3,
+  scheduler: "owner",
+  tasks: [],
+  messages: [],
 }
 
 test("collapsed, the column shows one avatar per member; clicking one asks to expand on that member", () => {
@@ -93,13 +96,35 @@ test("open, the column shows permission mode and reports changes", () => {
       onMode={(mode) => modes.push(mode)}
     />
   ))
-  const mode = host.querySelector(".members-mode")!
+  const mode = [...host.querySelectorAll(".members-mode")].find((item) => item.textContent?.includes("权限模式"))!
   expect(mode.textContent).toContain("权限模式")
   expect(mode.textContent).toContain("询问")
   const auto = [...mode.querySelectorAll("button")].find((item) => item.textContent?.includes("自动"))
   expect(auto).toBeTruthy()
   auto!.click()
   expect(modes).toEqual(["auto"])
+})
+
+test("the scheduling mode offers the owner, task pool and DAG and reports a change", () => {
+  const schedules: string[] = []
+  const host = mount(() => (
+    <MemberColumn
+      sessionID="s"
+      directory="/project"
+      group={group}
+      products={[]}
+      busy={() => false}
+      collapsed={false}
+      onCollapsed={() => {}}
+      onOpen={() => {}}
+      onSchedule={(mode) => schedules.push(mode)}
+    />
+  ))
+  const schedule = [...host.querySelectorAll(".members-mode")].find((item) => item.textContent?.includes("调度方式"))!
+  for (const name of ["群主", "任务池", "DAG"]) expect(schedule.textContent).toContain(name)
+  const pool = [...schedule.querySelectorAll("button")].find((item) => item.textContent?.includes("任务池"))!
+  pool.click()
+  expect(schedules).toEqual(["pool"])
 })
 
 test("collapsed, the column hides permission mode", () => {

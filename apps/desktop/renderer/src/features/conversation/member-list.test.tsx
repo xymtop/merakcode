@@ -41,6 +41,7 @@ const coworkers: Coworker[] = [
     duty: "负责客户端发布",
     profilePath: "/project/.merakcode/coworkers/linche/PROFILE.md",
     worldPath: "/project/.merakcode/coworkers/linche/world",
+    runtime: "local",
     bindings: { skills: [], mcp: [] },
   },
 ]

@@ -27,6 +27,7 @@ export function MemberColumn(props: {
   /** Expands the column on a member, or on the add form when target is "new" */
   onOpen: (request: { target: string; at: number }) => void
   onMode?: (mode: PermissionMode) => void
+  onSchedule?: (mode: CollaborationGroup["scheduler"]) => void
 }) {
   const mode = () => choice(props.sessionID, props.directory).mode
   const [removing, setRemoving] = createSignal<Seat>()
@@ -80,6 +81,32 @@ export function MemberColumn(props: {
         }
       >
         <div class="members-body scroll">
+          <div class="members-mode">
+            <span class="members-mode-label">{t("group.schedule")}</span>
+            <p class="members-mode-desc">{t("group.schedule.desc")}</p>
+            <Segmented
+              label={t("group.schedule")}
+              options={[
+                {
+                  value: "owner",
+                  label: t("group.schedule.owner"),
+                  hint: t("group.schedule.ownerDesc"),
+                },
+                {
+                  value: "pool",
+                  label: t("group.schedule.pool"),
+                  hint: t("group.schedule.poolDesc"),
+                },
+                {
+                  value: "dag",
+                  label: t("group.schedule.dag"),
+                  hint: t("group.schedule.dagDesc"),
+                },
+              ]}
+              value={props.group.scheduler}
+              onChange={(value) => props.onSchedule?.(value)}
+            />
+          </div>
           <div class="members-mode">
             <span class="members-mode-label">{t("mode.label")}</span>
             <p class="members-mode-desc">{t("group.permission.desc")}</p>

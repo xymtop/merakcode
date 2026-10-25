@@ -3,6 +3,7 @@ import { createEffect, createSignal, on, Show } from "solid-js"
 import { locale, t } from "../../i18n"
 import { call, client } from "../../state/client"
 import { Dialog } from "../../ui/dialog"
+import { Segmented } from "../../ui/segmented"
 import { Select } from "../../ui/select"
 import { toast } from "../../ui/toast"
 import { copyGroup } from "./group-copy"
@@ -30,6 +31,7 @@ export function GroupCreate(props: {
   const [groups, setGroups] = createSignal<CollaborationGroupSummary[]>([])
   const [coworkers, setCoworkers] = createSignal<Coworker[]>([])
   const [copied, setCopied] = createSignal<{ from: string; skipped: string[] }>()
+  const [scheduler, setScheduler] = createSignal<"owner" | "pool" | "dag">("owner")
   const [busy, setBusy] = createSignal(false)
   let added = 0
 
@@ -41,6 +43,7 @@ export function GroupCreate(props: {
         setTitle("")
         setSeats([leaderDraft()])
         setCopied(undefined)
+        setScheduler("owner")
         // Products may have changed since the last time: none are offered until they are checked again
         setProducts([])
         setCoworkers([])
@@ -78,6 +81,7 @@ export function GroupCreate(props: {
             product: seat.product,
             coworkerID: seat.coworkerID,
           })),
+          scheduler: scheduler(),
         }),
       )
       props.onCreated(created.sessionID)
@@ -140,6 +144,20 @@ export function GroupCreate(props: {
             onInput={(event) => setTitle(event.currentTarget.value)}
           />
         </label>
+        <div class="field">
+          <span>{t("group.schedule")}</span>
+          <p class="subtle group-create-hint">{t("group.schedule.desc")}</p>
+          <Segmented
+            label={t("group.schedule")}
+            options={[
+              { value: "owner", label: t("group.schedule.owner"), hint: t("group.schedule.ownerDesc") },
+              { value: "pool", label: t("group.schedule.pool"), hint: t("group.schedule.poolDesc") },
+              { value: "dag", label: t("group.schedule.dag"), hint: t("group.schedule.dagDesc") },
+            ]}
+            value={scheduler()}
+            onChange={setScheduler}
+          />
+        </div>
         <MemberList
           seats={seats()}
           products={products()}

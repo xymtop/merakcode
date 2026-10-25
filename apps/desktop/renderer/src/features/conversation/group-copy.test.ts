@@ -27,6 +27,7 @@ test("a copy keeps the name and each member's name, role, duty and product, and 
       sessionID: "s",
       title: "登录小组",
       directory: "/old",
+      scheduler: "owner",
       seats: [
         { name: "小主", role: "组长", duty: "带队", product: "merak", leader: true },
         { name: "小红", role: "产品经理", duty: "写需求", product: "claude", leader: false },

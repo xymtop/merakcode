@@ -36,6 +36,7 @@ import { Composer } from "./composer"
 import { groupState } from "./group-state"
 import { working } from "./turns"
 import { GroupTodo } from "./group-todo"
+import { GroupSchedule } from "./group-schedule"
 import { MemberColumn } from "./member-column"
 import { Approval, Question } from "./dock"
 import { askedBy } from "./members"
@@ -195,6 +196,11 @@ export function Conversation(props: {
       (error: Error) => toast({ kind: "error", title: t("error.request", { message: error.message }), error }),
     )
   }
+  const setSchedule = (scheduler: "owner" | "pool" | "dag") => {
+    void call(client(dir()).collaboration.schedule.change({ sessionID: props.id, scheduler })).catch(
+      (error: Error) => toast({ kind: "error", title: t("error.request", { message: error.message }), error }),
+    )
+  }
 
   createEffect(
     on(
@@ -343,8 +349,25 @@ export function Conversation(props: {
         </Show>
         <div class="chat-area">
           <div class="chat-main">
-            <Show when={isGroup()}>
-              <GroupTodo todos={group.todos()} />
+            <Show when={group.group()}>
+              {(current) => (
+                <Show
+                  when={current().scheduler === "owner"}
+                  fallback={
+                    <GroupSchedule
+                      sessionID={props.id}
+                      directory={dir()}
+                      group={current()}
+                      busy={running()}
+                      onRun={() =>
+                        send(props.id, props.directory, { text: t("group.schedule.runPrompt"), files: [] })
+                      }
+                    />
+                  }
+                >
+                  <GroupTodo todos={group.todos()} />
+                </Show>
+              )}
             </Show>
             <Messages
               sessionID={props.id}
@@ -434,6 +457,7 @@ export function Conversation(props: {
                 open={opening()}
                 onOpen={openMember}
                 onMode={setMode}
+                onSchedule={setSchedule}
               />
             )}
           </Show>
