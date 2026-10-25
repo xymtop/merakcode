@@ -1,12 +1,15 @@
-import type { CollaborationGroup, Coworker } from "@merakcode/sdk/client"
+import type { CollaborationGroup, Coworker, PermissionMode } from "@merakcode/sdk/client"
 import ChevronsLeft from "lucide-solid/icons/chevrons-left"
 import ChevronsRight from "lucide-solid/icons/chevrons-right"
 import Plus from "lucide-solid/icons/plus"
 import { createSignal, For, Show } from "solid-js"
 import { t } from "../../i18n"
 import { call, client } from "../../state/client"
+import { choice } from "../../state/models"
 import { Confirm } from "../../ui/dialog"
+import { Segmented } from "../../ui/segmented"
 import { toast } from "../../ui/toast"
+import { modeOptions } from "./composer"
 import { Avatar, MemberList, type Product, type Seat } from "./members"
 
 /** Members of a group conversation, beside the chat; collapses to a strip of avatars */
@@ -23,7 +26,9 @@ export function MemberColumn(props: {
   open?: { target: string; at: number }
   /** Expands the column on a member, or on the add form when target is "new" */
   onOpen: (request: { target: string; at: number }) => void
+  onMode?: (mode: PermissionMode) => void
 }) {
+  const mode = () => choice(props.sessionID, props.directory).mode
   const [removing, setRemoving] = createSignal<Seat>()
   const api = () => client(props.directory)
   // The record reloads on its own when the change is published; a failure keeps the form open
@@ -75,6 +80,16 @@ export function MemberColumn(props: {
         }
       >
         <div class="members-body scroll">
+          <div class="members-mode">
+            <span class="members-mode-label">{t("mode.label")}</span>
+            <p class="members-mode-desc">{t("group.permission.desc")}</p>
+            <Segmented
+              label={t("mode.label")}
+              options={modeOptions()}
+              value={mode()}
+              onChange={(value) => props.onMode?.(value)}
+            />
+          </div>
           <MemberList
             seats={props.group.seats}
             products={props.products}

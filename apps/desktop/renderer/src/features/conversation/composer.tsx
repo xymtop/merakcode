@@ -90,8 +90,10 @@ export function Composer(props: {
   compact?: boolean
   autofocus?: boolean
   placeholder?: string
-  /** Coworker chats and collaboration groups inherit their execution settings from their configuration */
+  /** Coworker chats and collaboration groups pick the model elsewhere; hide model/variant chips here */
   hideModelControls?: boolean
+  /** Groups configure permission in the members column; hide the composer control */
+  hidePermissionControls?: boolean
   /** Group members offered by @ */
   seats?: readonly { name: string; product: string; role?: string }[]
   products?: readonly Product[]
@@ -258,7 +260,7 @@ export function Composer(props: {
       event.preventDefault()
       void submit()
     }
-    if (event.key === "Tab" && event.shiftKey && !props.hideModelControls) {
+    if (event.key === "Tab" && event.shiftKey && !props.hidePermissionControls) {
       event.preventDefault()
       const index = MODES.indexOf(current().mode)
       setMode(MODES[(index + 1) % MODES.length]!)
@@ -451,7 +453,7 @@ export function Composer(props: {
             )}
           />
         </Show>
-        <Show when={!props.hideModelControls}>
+        <Show when={!props.hidePermissionControls}>
           <Select label={t("mode.label")} options={modeOptions()} value={current().mode} onChange={setMode} />
         </Show>
         <Show

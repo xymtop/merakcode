@@ -655,6 +655,7 @@ export const zh = {
   "group.members": "{count} 位成员",
   "group.column": "群成员",
   "group.column.title": "成员",
+  "group.permission.desc": "作用于本群会话。询问模式下改文件、跑命令会先请你确认。",
   "group.collapse": "收起成员栏",
   "group.expand": "展开成员栏",
   "group.leader": "群主",

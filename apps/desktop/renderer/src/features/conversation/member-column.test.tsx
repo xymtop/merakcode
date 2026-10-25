@@ -77,3 +77,43 @@ test("open, the column is titled Members; the count is shown once, on the top ba
   ))
   expect(host.querySelector(".members-title")!.textContent).toBe("成员")
 })
+
+test("open, the column shows permission mode and reports changes", () => {
+  const modes: string[] = []
+  const host = mount(() => (
+    <MemberColumn
+      sessionID="s"
+      directory="/project"
+      group={group}
+      products={[]}
+      busy={() => false}
+      collapsed={false}
+      onCollapsed={() => {}}
+      onOpen={() => {}}
+      onMode={(mode) => modes.push(mode)}
+    />
+  ))
+  const mode = host.querySelector(".members-mode")!
+  expect(mode.textContent).toContain("权限模式")
+  expect(mode.textContent).toContain("询问")
+  const auto = [...mode.querySelectorAll("button")].find((item) => item.textContent?.includes("自动"))
+  expect(auto).toBeTruthy()
+  auto!.click()
+  expect(modes).toEqual(["auto"])
+})
+
+test("collapsed, the column hides permission mode", () => {
+  const host = mount(() => (
+    <MemberColumn
+      sessionID="s"
+      directory="/project"
+      group={group}
+      products={[]}
+      busy={() => false}
+      collapsed
+      onCollapsed={() => {}}
+      onOpen={() => {}}
+    />
+  ))
+  expect(host.querySelector(".members-mode")).toBeNull()
+})

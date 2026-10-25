@@ -6,7 +6,7 @@ import Settings2 from "lucide-solid/icons/settings-2"
 import Undo2 from "lucide-solid/icons/undo-2"
 import Users from "lucide-solid/icons/users"
 import { createEffect, createMemo, createSignal, on, Show } from "solid-js"
-import type { Coworker } from "@merakcode/sdk/client"
+import type { Coworker, PermissionMode } from "@merakcode/sdk/client"
 import { useNavigate } from "@solidjs/router"
 import { t } from "../../i18n"
 import { sameDir, sessionPath } from "../../lib/route"
@@ -188,6 +188,12 @@ export function Conversation(props: {
   const openMember = (request: { target: string; at: number }) => {
     collapse(false)
     setOpening(request)
+  }
+  const setMode = (mode: PermissionMode) => {
+    choose(props.id, props.directory, { mode })
+    void call(client(dir()).session.setPermissionMode({ sessionID: props.id, permissionMode: mode })).catch(
+      (error: Error) => toast({ kind: "error", title: t("error.request", { message: error.message }), error }),
+    )
   }
 
   createEffect(
@@ -397,6 +403,7 @@ export function Conversation(props: {
                   compact
                   autofocus
                   hideModelControls={!!props.agent || isGroup()}
+                  hidePermissionControls={isGroup()}
                   placeholder={
                     props.agent
                       ? t("prompt.placeholderAgent", { name: props.agent.name })
@@ -408,14 +415,7 @@ export function Conversation(props: {
                   products={isGroup() ? group.products() : undefined}
                   onSubmit={(submission) => send(props.id, props.directory, submission)}
                   onStop={() => void stop(props.id, props.directory)}
-                  onMode={(mode) => {
-                    choose(props.id, props.directory, { mode })
-                    void call(
-                      client(dir()).session.setPermissionMode({ sessionID: props.id, permissionMode: mode }),
-                    ).catch((error: Error) =>
-                      toast({ kind: "error", title: t("error.request", { message: error.message }), error: error }),
-                    )
-                  }}
+                  onMode={setMode}
                 />
               </div>
             </div>
@@ -433,6 +433,7 @@ export function Conversation(props: {
                 onCollapsed={collapse}
                 open={opening()}
                 onOpen={openMember}
+                onMode={setMode}
               />
             )}
           </Show>

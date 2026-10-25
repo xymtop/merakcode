@@ -680,6 +680,7 @@ export const en: Record<keyof typeof zh, string> = {
   "group.members": "{count} members",
   "group.column": "Group members",
   "group.column.title": "Members",
+  "group.permission.desc": "Applies to this group session. In Ask mode, edits and commands ask first.",
   "group.collapse": "Collapse members",
   "group.expand": "Expand members",
   "group.leader": "Leader",

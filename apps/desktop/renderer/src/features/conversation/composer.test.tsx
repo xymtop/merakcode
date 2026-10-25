@@ -12,12 +12,18 @@ afterEach(() => {
   cleanup = () => {}
 })
 
-function mount(hideModelControls: boolean) {
+function mount(flags: { hideModelControls?: boolean; hidePermissionControls?: boolean } = {}) {
   const host = document.createElement("div")
   document.body.appendChild(host)
   const dispose = render(
     () => (
-      <Composer directory="/project" busy={false} hideModelControls={hideModelControls} onSubmit={() => undefined} />
+      <Composer
+        directory="/project"
+        busy={false}
+        hideModelControls={flags.hideModelControls}
+        hidePermissionControls={flags.hidePermissionControls}
+        onSubmit={() => undefined}
+      />
     ),
     host,
   )
@@ -28,14 +34,22 @@ function mount(hideModelControls: boolean) {
   return host
 }
 
-test("coworker and group chats hide model, reasoning, and permission controls", () => {
-  const hidden = mount(true)
-  const hiddenBar = hidden.querySelector(".composer-bar")!
-  expect(hiddenBar.textContent).not.toContain("询问")
-  expect(hiddenBar.textContent).not.toContain("推理")
-  expect(hiddenBar.querySelector('[aria-label="权限模式"]')).toBeNull()
-  cleanup()
+test("group chats hide model and permission controls", () => {
+  const host = mount({ hideModelControls: true, hidePermissionControls: true })
+  const bar = host.querySelector(".composer-bar")!
+  expect(bar.textContent).not.toContain("询问")
+  expect(bar.textContent).not.toContain("推理")
+  expect(bar.querySelector('[aria-label="权限模式"]')).toBeNull()
+})
 
-  const visible = mount(false)
-  expect(visible.querySelector('.composer-bar [aria-label="权限模式"]')).not.toBeNull()
+test("coworker chats hide model controls but keep permission mode", () => {
+  const host = mount({ hideModelControls: true })
+  const bar = host.querySelector(".composer-bar")!
+  expect(bar.textContent).not.toContain("推理")
+  expect(bar.querySelector('[aria-label="权限模式"]')).not.toBeNull()
+})
+
+test("ordinary chats show permission mode", () => {
+  const host = mount()
+  expect(host.querySelector('.composer-bar [aria-label="权限模式"]')).not.toBeNull()
 })
